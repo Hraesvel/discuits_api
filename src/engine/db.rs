@@ -148,6 +148,7 @@ mod test {
     use tokio;
 
     use crate::engine::db::*;
+    use crate::models::album::Album;
 
     #[tokio::test]
     async fn test_connection() {
