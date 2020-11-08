@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use arangors::document::options::InsertOptions;
+use async_trait::async_trait;
 
 use crate::engine::db::{Db, DbActions};
 use crate::engine::EngineError;
@@ -14,7 +15,7 @@ pub struct Inventory {
 #[async_trait]
 impl DbActions<Inventory> for Db {
     async fn insert(&self, doc: Inventory) -> Result<(), EngineError> {
-        let mut col = self.db().collection("inventory").await?;
+        let col = self.db().collection("inventory").await?;
         let doc = col
             .create_document(doc, InsertOptions::default())
             .await?;

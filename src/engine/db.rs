@@ -1,16 +1,10 @@
 #[warn(missing_docs)]
-use std::borrow::Cow;
-
-use arangors::{ClientError, Connection, Database, Document};
-use arangors::client::ClientExt;
+use arangors::{ClientError, Connection, Database};
 use arangors::client::reqwest::ReqwestClient;
 use async_trait::async_trait;
 use serde::export::Formatter;
 
 use crate::engine::EngineError;
-use crate::io::read::Get;
-use crate::io::write::Write;
-use crate::models::album::Album;
 
 pub(crate) mod arangodb;
 
@@ -175,7 +169,7 @@ mod test {
             .db_name("discket_dev")
             .connect().await.unwrap();
 
-        let mut a = Album::default();
+        let a = Album::default();
 
         db.db.collection("album")
             .await

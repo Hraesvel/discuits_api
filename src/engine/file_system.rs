@@ -1,7 +1,6 @@
 use std::borrow::Cow;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use async_trait::async_trait;
 use dashmap::DashMap;
 
 /// File System for system without a database (ArangoDB) installed

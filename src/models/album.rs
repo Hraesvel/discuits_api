@@ -1,16 +1,5 @@
 use std::borrow::Cow;
 
-use arangors::{AqlQuery, Collection};
-use arangors::client::reqwest::ReqwestClient;
-use arangors::document::options::InsertOptions;
-use async_trait::async_trait;
-
-use crate::engine::db::{Db, DbActions};
-use crate::engine::db::arangodb::aql_snippet;
-use crate::engine::EngineError;
-use crate::engine::file_system::{FileSystem, FsActions};
-use crate::io::{read::Get, write::Write};
-
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Album {
     id: Cow<'static, str>,
@@ -28,6 +17,9 @@ impl Album {
 }
 
 pub mod read {
+    use arangors::AqlQuery;
+    use async_trait::async_trait;
+
     use crate::engine::db::arangodb::aql_snippet;
     use crate::engine::db::Db;
     use crate::engine::EngineError;
@@ -67,11 +59,11 @@ pub mod read {
         type E = EngineError;
         type OUT = Self;
 
-        async fn get_all(engine: FileSystem) -> Result<Vec<Self::OUT>, Self::E> {
+        async fn get_all(_engine: FileSystem) -> Result<Vec<Self::OUT>, Self::E> {
             unimplemented!()
         }
 
-        async fn get(id: &'static str, engine: FileSystem) -> Result<Self::OUT, Self::E> {
+        async fn get(_id: &'static str, _engine: FileSystem) -> Result<Self::OUT, Self::E> {
             unimplemented!()
         }
     }
@@ -79,6 +71,7 @@ pub mod read {
 
 pub mod write {
     use arangors::document::options::InsertOptions;
+    use async_trait::async_trait;
 
     use crate::engine::db::{Db, DbActions};
     use crate::engine::EngineError;
@@ -87,8 +80,8 @@ pub mod write {
     #[async_trait]
     impl DbActions<Album> for Db {
         async fn insert(&self, doc: Album) -> Result<(), EngineError> {
-            let mut col = self.db().collection("album").await?;
-            let doc = col
+            let col = self.db().collection("album").await?;
+            let _doc = col
                 .create_document(doc, InsertOptions::default())
                 .await?;
             Ok(())
@@ -100,13 +93,10 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
-    use arangors::client::reqwest::ReqwestClient;
-    use arangors::Database;
-
     use crate::engine::db::{AuthType, Db, DbActions};
     use crate::engine::EngineError;
     use crate::io::read::Get;
-    use crate::models::album::{Album, Fish};
+    use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
 
