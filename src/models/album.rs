@@ -27,75 +27,74 @@ impl Album {
     }
 }
 
+pub mod read {
+    use crate::engine::db::arangodb::aql_snippet;
+    use crate::engine::db::Db;
+    use crate::engine::EngineError;
+    use crate::engine::file_system::FileSystem;
+    use crate::io::read::Get;
+    use crate::models::album::Album;
 
-#[async_trait]
-impl Get<Db> for Album {
-    type E = EngineError;
-    type OUT = Self;
+    #[async_trait]
+    impl Get<Db> for Album {
+        type E = EngineError;
+        type OUT = Self;
 
-    async fn get_all(engine: Db) -> Result<Vec<Self::OUT>, Self::E> {
-        let query = AqlQuery::builder()
-            .query(aql_snippet::GET_ALL)
-            .bind_var("@collection", Album::collection_name())
-            .build();
+        async fn get_all(engine: Db) -> Result<Vec<Self::OUT>, Self::E> {
+            let query = AqlQuery::builder()
+                .query(aql_snippet::GET_ALL)
+                .bind_var("@collection", Album::collection_name())
+                .build();
 
-        // let col: Vec<Album> = engine.db().collection(Album::collection_name()).await?.document();
-        let col = engine.db().aql_query(query).await?;
-        Ok(col)
+            // let col: Vec<Album> = engine.db().collection(Album::collection_name()).await?.document();
+            let col = engine.db().aql_query(query).await?;
+            Ok(col)
+        }
+
+        async fn get(id: &'static str, engine: Db) -> Result<Self::OUT, Self::E> {
+            let col: Album = engine
+                .db()
+                .collection("album")
+                .await?
+                .document(id).await?
+                .document;
+            Ok(col)
+        }
     }
 
-    async fn get(id: &'static str, engine: Db) -> Result<Self::OUT, Self::E> {
-        let col: Album = engine
-            .db()
-            .collection("album")
-            .await?
-            .document(id).await?
-            .document;
-        Ok(col)
-    }
-}
+    #[async_trait]
+    impl Get<FileSystem> for Album {
+        type E = EngineError;
+        type OUT = Self;
 
-#[async_trait]
-impl Get<FileSystem> for Album {
-    type E = EngineError;
-    type OUT = Self;
+        async fn get_all(engine: FileSystem) -> Result<Vec<Self::OUT>, Self::E> {
+            unimplemented!()
+        }
 
-    async fn get_all(engine: FileSystem) -> Result<Vec<Self::OUT>, Self::E> {
-        unimplemented!()
-    }
-
-    async fn get(id: &'static str, engine: FileSystem) -> Result<Self::OUT, Self::E> {
-        unimplemented!()
-    }
-}
-
-#[async_trait]
-impl DbActions<Album> for Db {
-    async fn insert(&self, doc: Album) -> Result<(), EngineError> {
-        let mut col = self.db().collection("album").await?;
-        let doc = col
-            .create_document(doc, InsertOptions::default())
-            .await?;
-        Ok(())
+        async fn get(id: &'static str, engine: FileSystem) -> Result<Self::OUT, Self::E> {
+            unimplemented!()
+        }
     }
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Fish {
-    name: Cow<'static, str>
-}
+pub mod write {
+    use arangors::document::options::InsertOptions;
 
-#[async_trait]
-impl DbActions<Fish> for Db {
-    async fn insert(&self, doc: Fish) -> Result<(), EngineError> {
-        let mut col = self.db().collection("fish").await?;
-        let doc = col
-            .create_document(doc, InsertOptions::default())
-            .await?;
-        Ok(())
+    use crate::engine::db::{Db, DbActions};
+    use crate::engine::EngineError;
+    use crate::models::album::Album;
+
+    #[async_trait]
+    impl DbActions<Album> for Db {
+        async fn insert(&self, doc: Album) -> Result<(), EngineError> {
+            let mut col = self.db().collection("album").await?;
+            let doc = col
+                .create_document(doc, InsertOptions::default())
+                .await?;
+            Ok(())
+        }
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -131,11 +130,8 @@ mod test {
             ..Album::default()
         };
 
-        let fish = Fish { name: Cow::from("Rock Fish") };
         let a = db.insert(new_album).await;
-        let f = db.insert(fish).await;
 
-        dbg!(&a);
         dbg!(&a);
         Ok(())
     }
