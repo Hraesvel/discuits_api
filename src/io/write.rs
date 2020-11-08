@@ -1,7 +1,8 @@
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait Write<T> {
-    type Data;
+    async fn insert(&mut self);
 
-    fn create(data: T) -> Self::Data;
-
-    fn update(data: T) -> Self::Data;
+    async fn update(&mut self);
 }

@@ -1,24 +1,78 @@
+#[warn(missing_docs)]
 use std::borrow::Cow;
 
-use arangors::{Connection, Database};
+use arangors::{ClientError, Connection, Database, Document};
 use arangors::client::ClientExt;
 use arangors::client::reqwest::ReqwestClient;
+use async_trait::async_trait;
+use serde::export::Formatter;
+
+use crate::engine::EngineError;
+use crate::io::read::Get;
+use crate::io::write::Write;
+use crate::models::album::Album;
+
+pub(crate) mod arangodb;
+
+const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
-pub(crate) struct Db {
+pub enum AuthType {
+    Basic { user: &'static str, pass: &'static str },
+    Jwt { user: &'static str, pass: &'static str },
+}
+
+
+#[derive(Debug)]
+pub struct Db {
     conn: Connection,
     db: Database<ReqwestClient>,
 }
 
+#[async_trait]
+pub trait DbActions<T>
+    where T: 'static
+{
+    // async fn get(&self, id: &'static str) -> Result<T, EngineError>;
+    async fn insert(&self, doc: T) -> Result<(), EngineError>;
+}
+
+
 impl Db {
+    /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
+    /// host can be altered using the method `DbBuilder::host(&mut self, host: &'static str)`.
     pub fn new() -> DbBuilder
     {
-        DbBuilder::default()
+        let mut builder = DbBuilder::default();
+        builder.host = DEFAULT_HOST;
+        builder
+    }
+
+    pub async fn validate_server(&self) -> Result<(), ClientError> {
+        Connection::validate_server(self.conn.url().as_str()).await
+    }
+
+    pub async fn reconnect_jwt(&mut self, usr: &'static str, pass: &'static str) -> Result<(), EngineError> {
+        let new_conn = Connection::establish_jwt(
+            self.conn.url().as_str(),
+            usr,
+            pass)
+            .await?;
+
+        self.db = new_conn.db(self.db.name()).await?;
+        self.conn = new_conn;
+
+        Ok(())
+    }
+
+    pub fn db(&self) -> &Database<ReqwestClient> {
+        &self.db
     }
 }
 
+
 #[derive(Debug, Default)]
-pub(crate) struct DbBuilder {
+pub struct DbBuilder {
     auth_type: Option<AuthType>,
     host: &'static str,
     db_name: &'static str,
@@ -26,22 +80,25 @@ pub(crate) struct DbBuilder {
 
 
 impl DbBuilder {
-    fn host(&mut self, host: &'static str) -> &mut Self {
+    /// Method to altering the host address from `DEFAULT_HOST`
+    pub fn host(&mut self, host: &'static str) -> &mut Self {
         self.host = host;
         self
     }
 
-    fn auth_type(&mut self, auth: AuthType) -> &mut Self {
+    pub fn auth_type(&mut self, auth: AuthType) -> &mut Self {
         self.auth_type = Some(auth);
         self
     }
 
-    fn db_name(&mut self, db_nam: &'static str) -> &mut Self {
+    pub fn db_name(&mut self, db_nam: &'static str) -> &mut Self {
         self.db_name = db_nam;
         self
     }
 
-    async fn connect<C: ClientExt>(&mut self) -> Result<Db, Box<dyn std::error::Error + Send + Sync>> {
+
+    pub async fn connect(&mut self) -> Result<Db, EngineError> {
+        if self.host.is_empty() {}
         let conn: Connection = match self.auth_type {
             None => {
                 Connection::establish_without_auth(self.host).await?
@@ -69,7 +126,60 @@ impl DbBuilder {
 }
 
 #[derive(Debug)]
-enum AuthType {
-    Basic { user: &'static str, pass: &'static str },
-    Jwt { user: &'static str, pass: &'static str },
+pub enum DbError {
+    MissHost,
+    MissDbName,
+
+}
+
+impl std::fmt::Display for DbError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DbError::MissHost => {
+                write!(f, "Empty host address was likely provided")
+            }
+            DbError::MissDbName => {
+                write!(f, "No database name was given")
+            }
+        }
+    }
+}
+
+
+impl std::error::Error for DbError {}
+
+#[cfg(test)]
+mod test {
+    use arangors::document::options::InsertOptions;
+    use tokio;
+
+    use crate::engine::db::*;
+
+    #[tokio::test]
+    async fn test_connection() {
+        let auth = AuthType::Basic { user: "discket", pass: "babyYoda" };
+        let db = Db::new()
+            .auth_type(auth)
+            .db_name("discket_dev")
+            .connect().await;
+
+        assert!(db.is_ok());
+        assert!(db.unwrap().validate_server().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test() {
+        let auth = AuthType::Basic { user: "discket", pass: "babyYoda" };
+        let db = Db::new()
+            .auth_type(auth)
+            .db_name("discket_dev")
+            .connect().await.unwrap();
+
+        let mut a = Album::default();
+
+        db.db.collection("album")
+            .await
+            .unwrap()
+            .create_document(a, InsertOptions::default()).await;
+    }
 }
