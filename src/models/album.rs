@@ -1,9 +1,11 @@
 use std::borrow::Cow;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+use uuid;
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Album {
-    id: Cow<'static, str>,
-    key: Cow<'static, str>,
+    _id: Cow<'static, str>,
+    _key: Cow<'static, str>,
     barcode: Cow<'static, str>,
     cat_no: Cow<'static, str>,
     name: Cow<'static, str>,
@@ -11,6 +13,18 @@ pub struct Album {
 }
 
 impl Album {
+    pub fn new() -> Self {
+        // let uid = UUID_INST.lock()
+        //     .unwrap()
+        //     .next()[..8].to_string();
+        let uid = uuid::Uuid::new_v4().to_string()[0..8].to_string();
+        // .next()[..8].to_string();
+        Album {
+            _key: Cow::from(uid),
+            ..Album::default()
+        }
+    }
+
     pub fn collection_name() -> &'static str {
         "album"
     }
@@ -48,7 +62,8 @@ pub mod read {
                 .db()
                 .collection("album")
                 .await?
-                .document(id).await?
+                .document(id)
+                .await?
                 .document;
             Ok(col)
         }
@@ -80,10 +95,9 @@ pub mod write {
     #[async_trait]
     impl DbActions<Album> for Db {
         async fn insert(&self, doc: Album) -> Result<(), EngineError> {
+            let io = InsertOptions::builder().overwrite(false).build();
             let col = self.db().collection("album").await?;
-            let _doc = col
-                .create_document(doc, InsertOptions::default())
-                .await?;
+            let _doc = col.create_document(doc, io).await?;
             Ok(())
         }
     }
@@ -93,6 +107,8 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
+    use arangors::document::options::InsertOptions;
+
     use crate::engine::db::{AuthType, Db, DbActions};
     use crate::engine::EngineError;
     use crate::io::read::Get;
@@ -101,28 +117,44 @@ mod test {
     type TestResult = Result<(), EngineError>;
 
     async fn common() -> Result<Db, EngineError> {
-        let auth = AuthType::Basic { user: "discket", pass: "babyYoda" };
+        let auth = AuthType::Basic {
+            user: "discket",
+            pass: "babyYoda",
+        };
         let db = Db::new()
             .auth_type(auth)
             .db_name("discket_dev")
-            .connect().await?;
+            .connect()
+            .await?;
 
         Ok(db)
     }
 
     #[tokio::test]
-    async fn test_album_db() -> TestResult
-    {
+    async fn test_insert_album_db() -> TestResult {
         let db = common().await?;
 
-        let new_album = Album {
-            name: Cow::from("Owl House"),
-            ..Album::default()
-        };
+        let mut new_album = Album::new();
+        new_album.name = Cow::from("Owl House");
 
-        let a = db.insert(new_album).await;
+        let resp = db.insert(new_album).await;
+        dbg!(&resp);
 
-        dbg!(&a);
+        assert!(resp.is_ok());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fail_on_overwrite_album_db() -> TestResult {
+        let db = common().await?;
+
+        let mut new_album = Album::new();
+        new_album.name = Cow::from("Owl House");
+
+        db.insert(new_album.clone()).await;
+        let resp = db.insert(new_album).await;
+        dbg!(&resp);
+        debug_assert!(resp.is_err());
         Ok(())
     }
 

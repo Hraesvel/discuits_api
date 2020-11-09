@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 #[warn(missing_docs)]
 #[macro_use]
 extern crate serde;
