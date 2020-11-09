@@ -161,20 +161,4 @@ mod test {
         assert!(db.is_ok());
         assert!(db.unwrap().validate_server().await.is_ok());
     }
-
-    #[tokio::test]
-    async fn test() {
-        let auth = AuthType::Basic { user: "discket", pass: "babyYoda" };
-        let db = Db::new()
-            .auth_type(auth)
-            .db_name("discket_dev")
-            .connect().await.unwrap();
-
-        let a = Album::default();
-
-        db.db.collection("album")
-            .await
-            .unwrap()
-            .create_document(a, InsertOptions::default()).await;
-    }
 }
