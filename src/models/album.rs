@@ -107,10 +107,9 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
-    use arangors::document::options::InsertOptions;
-
     use crate::engine::db::{AuthType, Db, DbActions};
     use crate::engine::EngineError;
+    use crate::engine::session::test::common_session_db;
     use crate::io::read::Get;
     use crate::models::album::Album;
 
@@ -165,6 +164,23 @@ mod test {
         let album = Album::get_all(db).await?;
 
         dbg!(&album);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_session_insert_album() -> TestResult {
+        let s = common_session_db().await?.clone();
+        let s_read = s.read().await;
+
+        let mut a = Album::new();
+        a.name = Cow::from("with session");
+
+        let resp = s_read.insert(a).await;
+
+        dbg!(&resp);
+
+        assert!(resp.is_ok());
 
         Ok(())
     }
