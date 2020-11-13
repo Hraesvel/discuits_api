@@ -2,7 +2,10 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait Write<T> {
-    async fn insert(&mut self);
+    type E;
+    type Element;
 
-    async fn update(&mut self);
+    async fn insert(&self, doc: T) -> Result<(), Self::E>;
+
+    async fn update(&self) -> Result<(), Self::E>;
 }

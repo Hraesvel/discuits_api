@@ -29,14 +29,6 @@ pub struct Db {
     db: Database<ReqwestClient>,
 }
 
-#[async_trait]
-pub trait DbActions<T>
-    where
-        T: 'static,
-{
-    // async fn get(&self, id: &'static str) -> Result<T, EngineError>;
-    async fn insert(&self, doc: T) -> Result<(), EngineError>;
-}
 
 impl Db {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`

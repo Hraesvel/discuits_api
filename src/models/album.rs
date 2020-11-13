@@ -93,17 +93,25 @@ pub mod write {
     use arangors::document::options::InsertOptions;
     use async_trait::async_trait;
 
-    use crate::engine::db::{Db, DbActions};
+    use crate::engine::db::Db;
     use crate::engine::EngineError;
+    use crate::io::write::Write;
     use crate::models::album::Album;
 
     #[async_trait]
-    impl DbActions<Album> for Db {
+    impl Write<Album> for Db {
+        type E = EngineError;
+        type Element = Album;
+
         async fn insert(&self, doc: Album) -> Result<(), EngineError> {
             let io = InsertOptions::builder().overwrite(false).build();
             let col = self.db().collection("album").await?;
             let _doc = col.create_document(doc, io).await?;
             Ok(())
+        }
+
+        async fn update(&self) -> Result<(), Self::E> {
+            unimplemented!()
         }
     }
 }
@@ -112,10 +120,11 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
-    use crate::engine::db::{AuthType, Db, DbActions};
+    use crate::engine::db::{AuthType, Db};
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
     use crate::io::read::Get;
+    use crate::io::write::Write;
     use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
