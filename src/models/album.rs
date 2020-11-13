@@ -46,14 +46,27 @@ pub mod read {
         type E = EngineError;
         type OUT = Self;
 
-        async fn get_all(engine: Db) -> Result<Vec<Self::OUT>, Self::E> {
+        /// Gets all Albums from storage `Db`
+        // Todo: pagination
+        async fn get_all(engine: Db) -> Result<Vec<Self::Element>, Self::E> {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
                 .bind_var("@collection", Album::collection_name())
+                .batch_size(25)
                 .build();
 
-            // let col: Vec<Album> = engine.db().collection(Album::collection_name()).await?.document();
-            let col = engine.db().aql_query(query).await?;
+            let cursor: Cursor<Album> = engine.db().aql_query_batch(query).await?;
+            let mut col: Vec<Album> = cursor.result;
+            if let Some(mut i) = cursor.id {
+                while let Ok(c) = engine.db().aql_next_batch(&i).await {
+                    let mut r: Vec<Album> = c.result;
+                    col.append(&mut r);
+                    if let Some(next_id) = c.id {
+                        i = next_id;
+                    } else { break; }
+                };
+            };
+
             Ok(col)
         }
 
