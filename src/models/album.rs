@@ -2,49 +2,53 @@ use std::borrow::Cow;
 
 use uuid;
 
+/// Album data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Album {
+    /// field that reflects ArangoDB's `_id`
     _id: Cow<'static, str>,
+    /// field that reflects ArangoDB's `_key`
     _key: Cow<'static, str>,
+    /// field for storing an barcode of a album
     barcode: Cow<'static, str>,
+    /// field for storing an catalog number of a album
     cat_no: Cow<'static, str>,
+    /// Albums name
     name: Cow<'static, str>,
+    /// Album details
     description: Cow<'static, str>,
 }
 
 impl Album {
+    /// Creates a new blank Album with a unique identifier for `_key`
     pub fn new() -> Self {
-        // let uid = UUID_INST.lock()
-        //     .unwrap()
-        //     .next()[..8].to_string();
         let uid = uuid::Uuid::new_v4().to_string()[0..8].to_string();
-        // .next()[..8].to_string();
         Album {
             _key: Cow::from(uid),
             ..Album::default()
         }
     }
 
-    pub fn collection_name() -> &'static str {
-        "album"
-    }
+    /// Returns data type name used by DB.
+    /// Helper function to avoid hard coding a collection's name in business logic code
+    pub fn collection_name() -> &'static str { "album" }
 }
 
 pub mod read {
-    use arangors::AqlQuery;
+    //! module for handling reads for album
+    use arangors::{AqlQuery, Cursor};
     use async_trait::async_trait;
 
     use crate::engine::db::arangodb::aql_snippet;
     use crate::engine::db::Db;
     use crate::engine::EngineError;
-    use crate::engine::file_system::FileSystem;
     use crate::io::read::Get;
     use crate::models::album::Album;
 
     #[async_trait]
     impl Get<Db> for Album {
         type E = EngineError;
-        type OUT = Self;
+        type Element = Self;
 
         /// Gets all Albums from storage `Db`
         // Todo: pagination
@@ -70,7 +74,8 @@ pub mod read {
             Ok(col)
         }
 
-        async fn get(id: &'static str, engine: Db) -> Result<Self::OUT, Self::E> {
+        /// Gets a single Albums from storage `Db`
+        async fn get(id: &'static str, engine: Db) -> Result<Self::Element, Self::E> {
             let col: Album = engine
                 .db()
                 .collection("album")
@@ -81,23 +86,10 @@ pub mod read {
             Ok(col)
         }
     }
-
-    #[async_trait]
-    impl Get<FileSystem> for Album {
-        type E = EngineError;
-        type OUT = Self;
-
-        async fn get_all(_engine: FileSystem) -> Result<Vec<Self::OUT>, Self::E> {
-            unimplemented!()
-        }
-
-        async fn get(_id: &'static str, _engine: FileSystem) -> Result<Self::OUT, Self::E> {
-            unimplemented!()
-        }
-    }
 }
 
 pub mod write {
+    //! module for handling writes for album
     use arangors::document::options::InsertOptions;
     use async_trait::async_trait;
 
@@ -163,7 +155,7 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        db.insert(new_album.clone()).await;
+        db.insert(new_album.clone()).await?;
         let resp = db.insert(new_album).await;
         dbg!(&resp);
         debug_assert!(resp.is_err());
@@ -176,7 +168,7 @@ mod test {
 
         let album = Album::get_all(db).await?;
 
-        dbg!(&album);
+        dbg!(&album.len());
 
         Ok(())
     }
