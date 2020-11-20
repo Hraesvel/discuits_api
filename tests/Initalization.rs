@@ -2,19 +2,19 @@
 mod test {
     use std::error::Error;
 
-    use discket_api::engine::{
-        db::*,
-        session::*,
-    };
+    use discket_api::engine::{db::*, session::*};
 
     type SimpleResult = Result<(), Box<dyn Error + Sync + Send>>;
 
-    pub async fn setup_with_arangodb() -> Result<Session<Db>, Box<dyn Error + Sync + Send>>
-    {
+    pub async fn setup_with_arangodb() -> Result<Session<Db>, Box<dyn Error + Sync + Send>> {
         let database = Db::new()
-            .auth_type(AuthType::Jwt { user: "discket_test", pass: "" })
+            .auth_type(AuthType::Jwt {
+                user: "discket_test",
+                pass: "",
+            })
             .db_name("discket_test")
-            .connect().await?;
+            .connect()
+            .await?;
 
         let session = Session::from(database)?;
         Ok(session)
