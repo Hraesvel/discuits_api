@@ -12,14 +12,8 @@ const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
 pub enum AuthType<'a> {
-    Basic {
-        user: &'a str,
-        pass: &'a str,
-    },
-    Jwt {
-        user: &'a str,
-        pass: &'a str,
-    },
+    Basic { user: &'a str, pass: &'a str },
+    Jwt { user: &'a str, pass: &'a str },
 }
 
 #[derive(Debug)]
@@ -27,7 +21,6 @@ pub struct Db {
     conn: Connection,
     db: Database<ReqwestClient>,
 }
-
 
 impl Db {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
@@ -220,11 +213,14 @@ pub(crate) mod test {
         {
             let mut new_db = db.write().await;
 
-            *new_db = Db::new().db_name("discket_test")
+            *new_db = Db::new()
+                .db_name("discket_test")
                 .auth_type(AuthType::Jwt {
                     user: "discket_test",
                     pass: "",
-                }).connect().await?;
+                })
+                .connect()
+                .await?;
 
             assert!(new_db.validate_server().await.is_ok());
             assert!(new_db.validate_connection().await.is_ok());

@@ -41,9 +41,10 @@ impl Artist {
 impl RequiredTraits for Artist {}
 
 impl TypeCheck for Artist {
-    fn collection_name<'a>() -> &'a str { "artist" }
+    fn collection_name<'a>() -> &'a str {
+        "artist"
+    }
 }
-
 
 pub mod read {
     //! module for handling reads for artist
@@ -64,7 +65,9 @@ pub mod read {
 
         /// Gets all artists from storage `Db`
         async fn get_all(engine: &Db) -> Result<Vec<Self::Element>, Self::E>
-            where Self: TypeCheck {
+            where
+                Self: TypeCheck,
+        {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
                 .bind_var("@collection", Self::collection_name())
@@ -79,8 +82,10 @@ pub mod read {
                     col.append(&mut r);
                     if let Some(next_id) = c.id {
                         i = next_id;
-                    } else { break; }
-                };
+                    } else {
+                        break;
+                    }
+                }
             };
 
             Ok(col)
@@ -129,7 +134,6 @@ pub mod write {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use std::borrow::Cow;
@@ -143,7 +147,6 @@ mod test {
     use crate::models::artist::Artist;
 
     type TestResult = Result<(), EngineError>;
-
 
     #[tokio::test]
     async fn test_insert_artist_db() -> TestResult {
@@ -201,4 +204,3 @@ mod test {
         Ok(())
     }
 }
-

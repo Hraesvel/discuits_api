@@ -15,5 +15,4 @@ pub struct FileSystem {
     pub(crate) shards: DashMap<Cow<'static, str>, &'static Path>,
 }
 
-
 impl Engine for FileSystem {}

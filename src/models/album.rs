@@ -57,7 +57,9 @@ pub mod read {
 
         /// Gets all Albums from storage `Db`
         async fn get_all(engine: &Db) -> Result<Vec<Self::Element>, Self::E>
-            where Self: RequiredTraits {
+            where
+                Self: RequiredTraits,
+        {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
                 .bind_var("@collection", Self::collection_name())
@@ -72,8 +74,10 @@ pub mod read {
                     col.append(&mut r);
                     if let Some(next_id) = c.id {
                         i = next_id;
-                    } else { break; }
-                };
+                    } else {
+                        break;
+                    }
+                }
             };
 
             Ok(col)
@@ -193,5 +197,7 @@ mod test {
 impl TypeCheck for Album {
     /// Returns data type name used by DB.
     /// Helper function to avoid hard coding a collection's name in business logic code
-    fn collection_name<'a>() -> &'a str { "album" }
+    fn collection_name<'a>() -> &'a str {
+        "album"
+    }
 }

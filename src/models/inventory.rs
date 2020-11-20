@@ -19,8 +19,7 @@ impl Write<Inventory> for Db {
     type E = EngineError;
     type Element = Inventory;
 
-    async fn insert(&self, doc: Inventory) -> Result<(), EngineError>
-    {
+    async fn insert(&self, doc: Inventory) -> Result<(), EngineError> {
         let col = self.db().collection("inventory").await?;
         col.create_document(doc, InsertOptions::default()).await?;
         Ok(())

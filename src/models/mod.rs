@@ -6,9 +6,8 @@ use crate::engine::EngineError;
 use crate::io::read::EngineGet;
 
 pub mod album;
-pub mod inventory;
 pub mod artist;
-
+pub mod inventory;
 
 pub trait RequiredTraits: serde::de::DeserializeOwned + TypeCheck + Sync + Send {}
 
@@ -16,14 +15,15 @@ pub trait TypeCheck {
     fn collection_name<'a>() -> &'a str;
 }
 
-
 #[async_trait]
 impl EngineGet for Db {
     type E = EngineError;
 
     async fn get_all<T>(&self) -> Result<Vec<T>, Self::E>
-        where T: RequiredTraits {
-        use arangors::{Cursor, AqlQuery};
+        where
+            T: RequiredTraits,
+    {
+        use arangors::{AqlQuery, Cursor};
 
         let query = AqlQuery::builder()
             .query(aql_snippet::GET_ALL)
@@ -41,8 +41,10 @@ impl EngineGet for Db {
                 collection.append(&mut r);
                 if let Some(next_id) = c.id {
                     i = next_id;
-                } else { break; }
-            };
+                } else {
+                    break;
+                }
+            }
         };
 
         Ok(collection)

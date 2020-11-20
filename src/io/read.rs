@@ -13,9 +13,7 @@ pub trait Get<T> {
 
     /// Method to get a single Element
     async fn get(id: &str, engine: &T) -> Result<Self::Element, Self::E>;
-
 }
-
 
 /// Trait for implementing `GET for engines` like methods.
 #[async_trait]
