@@ -1,25 +1,24 @@
 #[warn(missing_docs)]
 use arangors::{ClientError, Connection, Database};
 use arangors::client::reqwest::ReqwestClient;
-use async_trait::async_trait;
 use serde::export::Formatter;
 
 use crate::engine::EngineError;
-use crate::engine::session::Session;
+use crate::engine::session::Engine;
 
 pub(crate) mod arangodb;
 
 const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
-pub enum AuthType {
+pub enum AuthType<'a> {
     Basic {
-        user: &'static str,
-        pass: &'static str,
+        user: &'a str,
+        pass: &'a str,
     },
     Jwt {
-        user: &'static str,
-        pass: &'static str,
+        user: &'a str,
+        pass: &'a str,
     },
 }
 
@@ -33,7 +32,7 @@ pub struct Db {
 impl Db {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
     /// host can be altered using the method `DbBuilder::host(&mut self, host: &'static str)`.
-    pub fn new() -> DbBuilder {
+    pub fn new<'a>() -> DbBuilder<'a> {
         let mut builder = DbBuilder::default();
         builder.host = DEFAULT_HOST;
         builder
@@ -64,21 +63,21 @@ impl Db {
             "http://127.0.0.1:8529/_db/{}/_api/simple/any",
             self.db.name()
         );
-        let resp = self.conn.session().0.put(&db).send().await?;
-        dbg!(resp.status());
+        self.conn.session().0.put(&db).send().await?;
         Ok(())
     }
 
-    pub async fn reconnect_jwt(
+    /// JWT token can become invalid if the database is reset.
+    /// This method attempts to reconnect (revalidate) the database, used existing information.
+    pub async fn reconnect_jwt<'a>(
         &mut self,
-        usr: &'static str,
-        pass: &'static str,
+        usr: &'a str,
+        pass: &'a str,
     ) -> Result<(), EngineError> {
         let new_conn = Connection::establish_jwt(self.conn.url().as_str(), usr, pass).await?;
 
         self.db = new_conn.db(self.db.name()).await?;
         self.conn = new_conn;
-
         Ok(())
     }
 
@@ -88,25 +87,25 @@ impl Db {
 }
 
 #[derive(Debug, Default)]
-pub struct DbBuilder {
-    auth_type: Option<AuthType>,
-    host: &'static str,
-    db_name: &'static str,
+pub struct DbBuilder<'a> {
+    auth_type: Option<AuthType<'a>>,
+    host: &'a str,
+    db_name: &'a str,
 }
 
-impl DbBuilder {
+impl<'a> DbBuilder<'a> {
     /// Method to altering the host address from `DEFAULT_HOST`
-    pub fn host(&mut self, host: &'static str) -> &mut Self {
+    pub fn host(&mut self, host: &'a str) -> &mut Self {
         self.host = host;
         self
     }
 
-    pub fn auth_type(&mut self, auth: AuthType) -> &mut Self {
+    pub fn auth_type(&mut self, auth: AuthType<'a>) -> &mut Self {
         self.auth_type = Some(auth);
         self
     }
 
-    pub fn db_name(&mut self, db_nam: &'static str) -> &mut Self {
+    pub fn db_name(&mut self, db_nam: &'a str) -> &mut Self {
         self.db_name = db_nam;
         self
     }
@@ -130,6 +129,8 @@ impl DbBuilder {
         Ok(database)
     }
 }
+
+impl Engine for Db {}
 
 #[derive(Debug)]
 pub enum DbError {
@@ -181,7 +182,7 @@ mod test {
             assert!(new_db.validate_db().await.is_ok());
         }
 
-        dbg!(db.read().await.db.name());
+        // dbg!(db.read().await.db.name());
 
         Ok(())
     }
@@ -197,7 +198,7 @@ mod test {
             assert!(d.validate_connection().await.is_ok());
             assert!(d.validate_server().await.is_ok());
         }
-        dbg!(db.read().await.db.name());
+        // dbg!(db.read().await.db.name());
 
         {
             let mut new_db = db.write().await;

@@ -10,6 +10,8 @@ pub trait NewSession {}
 
 pub struct Session<T> (Arc<RwLock<T>>);
 
+pub trait Engine {}
+
 impl<T> Session<T>
 {
     pub fn from(t: T) -> Result<Session<T>, EngineError> {
@@ -28,7 +30,7 @@ impl NewSession for Db {}
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::engine::{EngineError, session};
+    use crate::engine::EngineError;
     use crate::engine::db::{AuthType, Db};
     use crate::engine::session::Session;
 
