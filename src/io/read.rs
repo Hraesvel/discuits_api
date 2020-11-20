@@ -14,7 +14,6 @@ pub trait Get<T> {
     /// Method to get a single Element
     async fn get(id: &str, engine: &T) -> Result<Self::Element, Self::E>;
 
-    // fn get(id: Cow<'static, str>) -> Self::Data;
 }
 
 

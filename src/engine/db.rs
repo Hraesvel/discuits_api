@@ -150,11 +150,28 @@ impl std::fmt::Display for DbError {
 impl std::error::Error for DbError {}
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use tokio;
 
     use crate::engine::db::*;
+    use crate::engine::db::{AuthType, Db};
+    use crate::engine::EngineError;
+    use crate::engine::session::Session;
     use crate::engine::session::test::common_session_db;
+
+    pub async fn common() -> Result<Db, EngineError> {
+        let auth = AuthType::Basic {
+            user: "discket",
+            pass: "babyYoda",
+        };
+        let db = Db::new()
+            .auth_type(auth)
+            .db_name("discket_dev")
+            .connect()
+            .await?;
+
+        Ok(db)
+    }
 
     #[tokio::test]
     async fn test_connection() -> Result<(), EngineError> {

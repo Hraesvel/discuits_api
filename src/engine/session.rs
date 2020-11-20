@@ -30,8 +30,8 @@ impl NewSession for Db {}
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::engine::EngineError;
     use crate::engine::db::{AuthType, Db};
+    use crate::engine::EngineError;
     use crate::engine::session::Session;
 
     pub async fn common_session_db() -> Result<Session<Db>, EngineError> {

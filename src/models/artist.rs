@@ -135,6 +135,7 @@ mod test {
     use std::borrow::Cow;
 
     use crate::engine::db::{AuthType, Db};
+    use crate::engine::db::test::common;
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
@@ -143,19 +144,6 @@ mod test {
 
     type TestResult = Result<(), EngineError>;
 
-    async fn common() -> Result<Db, EngineError> {
-        let auth = AuthType::Basic {
-            user: "discket",
-            pass: "babyYoda",
-        };
-        let db = Db::new()
-            .auth_type(auth)
-            .db_name("discket_dev")
-            .connect()
-            .await?;
-
-        Ok(db)
-    }
 
     #[tokio::test]
     async fn test_insert_artist_db() -> TestResult {

@@ -127,27 +127,14 @@ mod test {
     use std::borrow::Cow;
 
     use crate::engine::db::{AuthType, Db};
+    use crate::engine::db::test::common;
     use crate::engine::EngineError;
-    use crate::engine::session::test::common_session_db;
+    use crate::engine::session::test::{common, common_session_db};
     use crate::io::read::{EngineGet, Get};
     use crate::io::write::Write;
     use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
-
-    async fn common() -> Result<Db, EngineError> {
-        let auth = AuthType::Basic {
-            user: "discket",
-            pass: "babyYoda",
-        };
-        let db = Db::new()
-            .auth_type(auth)
-            .db_name("discket_dev")
-            .connect()
-            .await?;
-
-        Ok(db)
-    }
 
     #[tokio::test]
     async fn test_insert_album_db() -> TestResult {
@@ -156,8 +143,6 @@ mod test {
         new_album.name = Cow::from("Owl House");
 
         let resp = db.insert(new_album).await;
-        // dbg!(&resp);
-
         assert!(resp.is_ok());
         Ok(())
     }
@@ -171,7 +156,6 @@ mod test {
 
         db.insert(new_album.clone()).await?;
         let resp = db.insert(new_album).await;
-        // dbg!(&resp);
         assert!(resp.is_err());
         Ok(())
     }
@@ -184,7 +168,7 @@ mod test {
         let albums = Album::get_all(&db).await?;
 
         dbg!(db_album);
-        println!("><><><><>><><>><><><><><>><");
+        println!("><><><><><><><><><><><><");
         dbg!(albums);
 
         Ok(())
@@ -199,8 +183,6 @@ mod test {
         a.name = Cow::from("with session");
 
         let resp = s_read.insert(a).await;
-
-        // dbg!(&resp);
 
         assert!(resp.is_ok());
 
