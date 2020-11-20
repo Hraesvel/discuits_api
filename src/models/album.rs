@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use uuid;
+use crate::models::{RequiredTraits, TypeCheck};
 
 /// Album data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -19,19 +19,23 @@ pub struct Album {
     description: Cow<'static, str>,
 }
 
+impl RequiredTraits for Album {}
+
 impl Album {
     /// Creates a new blank Album with a unique identifier for `_key`
     pub fn new() -> Self {
-        let uid = uuid::Uuid::new_v4().to_string()[0..8].to_string();
+        use uuid::Uuid;
+
+        let uid = Uuid::new_v4().to_string()[0..8].to_string();
         Album {
             _key: Cow::from(uid),
             ..Album::default()
         }
     }
 
-    /// Returns data type name used by DB.
-    /// Helper function to avoid hard coding a collection's name in business logic code
-    pub fn collection_name() -> &'static str { "album" }
+    pub fn change_id(&mut self, new_id: String) {
+        self._key = Cow::from(new_id);
+    }
 }
 
 pub mod read {
@@ -43,6 +47,7 @@ pub mod read {
     use crate::engine::db::Db;
     use crate::engine::EngineError;
     use crate::io::read::Get;
+    use crate::models::{RequiredTraits, TypeCheck};
     use crate::models::album::Album;
 
     #[async_trait]
@@ -51,19 +56,19 @@ pub mod read {
         type Element = Self;
 
         /// Gets all Albums from storage `Db`
-        // Todo: pagination
-        async fn get_all(engine: Db) -> Result<Vec<Self::Element>, Self::E> {
+        async fn get_all(engine: &Db) -> Result<Vec<Self::Element>, Self::E>
+            where Self: RequiredTraits {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
-                .bind_var("@collection", Album::collection_name())
+                .bind_var("@collection", Self::collection_name())
                 .batch_size(25)
                 .build();
 
-            let cursor: Cursor<Album> = engine.db().aql_query_batch(query).await?;
-            let mut col: Vec<Album> = cursor.result;
+            let cursor: Cursor<Self> = engine.db().aql_query_batch(query).await?;
+            let mut col: Vec<Self> = cursor.result;
             if let Some(mut i) = cursor.id {
                 while let Ok(c) = engine.db().aql_next_batch(&i).await {
-                    let mut r: Vec<Album> = c.result;
+                    let mut r: Vec<Self> = c.result;
                     col.append(&mut r);
                     if let Some(next_id) = c.id {
                         i = next_id;
@@ -75,8 +80,8 @@ pub mod read {
         }
 
         /// Gets a single Albums from storage `Db`
-        async fn get(id: &'static str, engine: Db) -> Result<Self::Element, Self::E> {
-            let col: Album = engine
+        async fn get(id: &str, engine: &Db) -> Result<Self::Element, Self::E> {
+            let col: Self = engine
                 .db()
                 .collection("album")
                 .await?
@@ -97,6 +102,7 @@ pub mod write {
     use crate::engine::EngineError;
     use crate::io::write::Write;
     use crate::models::album::Album;
+    use crate::models::TypeCheck;
 
     #[async_trait]
     impl Write<Album> for Db {
@@ -105,7 +111,7 @@ pub mod write {
 
         async fn insert(&self, doc: Album) -> Result<(), EngineError> {
             let io = InsertOptions::builder().overwrite(false).build();
-            let col = self.db().collection("album").await?;
+            let col = self.db().collection(Album::collection_name()).await?;
             let _doc = col.create_document(doc, io).await?;
             Ok(())
         }
@@ -123,7 +129,7 @@ mod test {
     use crate::engine::db::{AuthType, Db};
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
-    use crate::io::read::Get;
+    use crate::io::read::{EngineGet, Get};
     use crate::io::write::Write;
     use crate::models::album::Album;
 
@@ -146,12 +152,11 @@ mod test {
     #[tokio::test]
     async fn test_insert_album_db() -> TestResult {
         let db = common().await?;
-
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
         let resp = db.insert(new_album).await;
-        dbg!(&resp);
+        // dbg!(&resp);
 
         assert!(resp.is_ok());
         Ok(())
@@ -166,8 +171,8 @@ mod test {
 
         db.insert(new_album.clone()).await?;
         let resp = db.insert(new_album).await;
-        dbg!(&resp);
-        debug_assert!(resp.is_err());
+        // dbg!(&resp);
+        assert!(resp.is_err());
         Ok(())
     }
 
@@ -175,9 +180,12 @@ mod test {
     async fn test_get_all_albums() -> TestResult {
         let db = common().await?;
 
-        let album = Album::get_all(db).await?;
+        let db_album = db.get_all::<Album>().await?;
+        let albums = Album::get_all(&db).await?;
 
-        dbg!(&album.len());
+        dbg!(db_album);
+        println!("><><><><>><><>><><><><><>><");
+        dbg!(albums);
 
         Ok(())
     }
@@ -192,10 +200,16 @@ mod test {
 
         let resp = s_read.insert(a).await;
 
-        dbg!(&resp);
+        // dbg!(&resp);
 
         assert!(resp.is_ok());
 
         Ok(())
     }
+}
+
+impl TypeCheck for Album {
+    /// Returns data type name used by DB.
+    /// Helper function to avoid hard coding a collection's name in business logic code
+    fn collection_name<'a>() -> &'a str { "album" }
 }
