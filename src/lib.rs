@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-//! # Discket Api
+//! # Discuits Api
 #[macro_use]
 extern crate serde;
 

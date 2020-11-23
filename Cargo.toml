@@ -1,5 +1,5 @@
 [package]
-name = "discket_api"
+name = "discuits_api"
 version = "0.1.0"
 authors = ["Martin Smith <mcodesmith@gmail.com>"]
 edition = "2018"
