@@ -2,7 +2,7 @@
 mod test {
     use std::error::Error;
 
-    use discket_api::engine::{db::*, session::*};
+    use discuits_api::engine::{db::*, session::*};
 
     type SimpleResult = Result<(), Box<dyn Error + Sync + Send>>;
 
