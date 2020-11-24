@@ -7,6 +7,7 @@ use crate::engine::EngineError;
 use crate::engine::session::Engine;
 
 pub(crate) mod arangodb;
+pub mod ops;
 
 const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
