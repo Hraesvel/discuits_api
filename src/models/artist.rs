@@ -1,7 +1,7 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 
+use crate::models::DocDetail;
 use crate::models::RequiredTraits;
-use crate::models::TypeCheck;
 
 /// Artist Data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -40,9 +40,13 @@ impl Artist {
 
 impl RequiredTraits for Artist {}
 
-impl TypeCheck for Artist {
+impl DocDetail for Artist {
     fn collection_name<'a>() -> &'a str {
         "artist"
+    }
+
+    fn key<'a>(&self) -> String {
+        self._key.to_string()
     }
 }
 
@@ -56,17 +60,17 @@ pub mod read {
     use crate::engine::EngineError;
     use crate::io::read::Get;
     use crate::models::artist::Artist;
-    use crate::models::TypeCheck;
+    use crate::models::DocDetail;
 
     #[async_trait]
     impl Get<Db> for Artist {
         type E = EngineError;
-        type Element = Self;
+        type Document = Self;
 
         /// Gets all artists from storage `Db`
-        async fn get_all(engine: &Db) -> Result<Vec<Self::Element>, Self::E>
+        async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
             where
-                Self: TypeCheck,
+                Self: DocDetail,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -92,7 +96,7 @@ pub mod read {
         }
 
         /// Gets a single artists from storage `Db`
-        async fn get(id: &str, engine: &Db) -> Result<Self::Element, Self::E> {
+        async fn get(id: &str, engine: &Db) -> Result<Self::Document, Self::E> {
             let col: Self = engine
                 .db()
                 .collection("artist")
@@ -114,12 +118,12 @@ pub mod write {
     use crate::engine::EngineError;
     use crate::io::write::Write;
     use crate::models::artist::Artist;
-    use crate::models::TypeCheck;
+    use crate::models::DocDetail;
 
     #[async_trait]
     impl Write<Artist> for Db {
         type E = EngineError;
-        type Element = Artist;
+        type Document = Artist;
 
         async fn insert(&self, doc: Artist) -> Result<(), EngineError> {
             let io = InsertOptions::builder().overwrite(false).build();

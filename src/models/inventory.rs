@@ -17,7 +17,7 @@ pub struct Inventory {
 #[async_trait]
 impl Write<Inventory> for Db {
     type E = EngineError;
-    type Element = Inventory;
+    type Document = Inventory;
 
     async fn insert(&self, doc: Inventory) -> Result<(), EngineError> {
         let col = self.db().collection("inventory").await?;

@@ -1,6 +1,6 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 
-use crate::models::{RequiredTraits, TypeCheck};
+use crate::models::{DocDetail, RequiredTraits};
 
 /// Album data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -38,6 +38,18 @@ impl Album {
     }
 }
 
+impl DocDetail for Album {
+    /// Returns data type name used by DB.
+    /// Helper function to avoid hard coding a collection's name in business logic code
+    fn collection_name<'a>() -> &'a str {
+        "album"
+    }
+
+    fn key<'a>(&self) -> String {
+        self._key.to_string()
+    }
+}
+
 pub mod read {
     //! module for handling reads for album
     use arangors::{AqlQuery, Cursor};
@@ -47,16 +59,16 @@ pub mod read {
     use crate::engine::db::Db;
     use crate::engine::EngineError;
     use crate::io::read::Get;
-    use crate::models::{RequiredTraits, TypeCheck};
+    use crate::models::{DocDetail, RequiredTraits};
     use crate::models::album::Album;
 
     #[async_trait]
     impl Get<Db> for Album {
         type E = EngineError;
-        type Element = Self;
+        type Document = Self;
 
         /// Gets all Albums from storage `Db`
-        async fn get_all(engine: &Db) -> Result<Vec<Self::Element>, Self::E>
+        async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
             where
                 Self: RequiredTraits,
         {
@@ -84,7 +96,7 @@ pub mod read {
         }
 
         /// Gets a single Albums from storage `Db`
-        async fn get(id: &str, engine: &Db) -> Result<Self::Element, Self::E> {
+        async fn get(id: &str, engine: &Db) -> Result<Self::Document, Self::E> {
             let col: Self = engine
                 .db()
                 .collection("album")
@@ -106,12 +118,12 @@ pub mod write {
     use crate::engine::EngineError;
     use crate::io::write::Write;
     use crate::models::album::Album;
-    use crate::models::TypeCheck;
+    use crate::models::DocDetail;
 
     #[async_trait]
     impl Write<Album> for Db {
         type E = EngineError;
-        type Element = Album;
+        type Document = Album;
 
         async fn insert(&self, doc: Album) -> Result<(), EngineError> {
             let io = InsertOptions::builder().overwrite(false).build();
@@ -133,7 +145,7 @@ mod test {
     use crate::engine::db::{AuthType, Db};
     use crate::engine::db::test::common;
     use crate::engine::EngineError;
-    use crate::engine::session::test::{common, common_session_db};
+    use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
     use crate::io::write::Write;
     use crate::models::album::Album;
@@ -194,10 +206,4 @@ mod test {
     }
 }
 
-impl TypeCheck for Album {
-    /// Returns data type name used by DB.
-    /// Helper function to avoid hard coding a collection's name in business logic code
-    fn collection_name<'a>() -> &'a str {
-        "album"
-    }
-}
+
