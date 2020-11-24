@@ -6,13 +6,13 @@ use crate::models::RequiredTraits;
 #[async_trait]
 pub trait Get<T> {
     type E;
-    type Element;
+    type Document;
 
     /// Method to get all Elements
-    async fn get_all(engine: &T) -> Result<Vec<Self::Element>, Self::E>;
+    async fn get_all(engine: &T) -> Result<Vec<Self::Document>, Self::E>;
 
     /// Method to get a single Element
-    async fn get(id: &str, engine: &T) -> Result<Self::Element, Self::E>;
+    async fn get(id: &str, engine: &T) -> Result<Self::Document, Self::E>;
 }
 
 /// Trait for implementing `GET for engines` like methods.
