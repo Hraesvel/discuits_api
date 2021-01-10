@@ -33,8 +33,19 @@ impl Album {
         }
     }
 
-    pub fn change_id(&mut self, new_id: String) {
+    pub fn change_id(&mut self, new_id: &'static str) -> &mut Self {
         self._key = Cow::from(new_id);
+        self
+    }
+
+    pub fn name(&mut self, name: &'static str) -> &mut Self {
+        self.name = Cow::from(name);
+        self
+    }
+
+    pub fn description(&mut self, desc: &'static str) -> &mut Self {
+        self.description = Cow::from(desc);
+        self
     }
 }
 
@@ -45,8 +56,11 @@ impl DocDetail for Album {
         "album"
     }
 
-    fn key<'a>(&self) -> String {
+    fn key(&self) -> String {
         self._key.to_string()
+    }
+    fn id(&self) -> String {
+        format!("{}/{}", Self::collection_name(), self._key)
     }
 }
 
@@ -55,12 +69,10 @@ pub mod read {
     use arangors::{AqlQuery, Cursor};
     use async_trait::async_trait;
 
-    use crate::engine::db::arangodb::aql_snippet;
-    use crate::engine::db::Db;
+    use crate::engine::db::{arangodb::aql_snippet, Db};
     use crate::engine::EngineError;
     use crate::io::read::Get;
-    use crate::models::{DocDetail, RequiredTraits};
-    use crate::models::album::Album;
+    use crate::models::{album::Album, DocDetail, RequiredTraits};
 
     #[async_trait]
     impl Get<Db> for Album {
@@ -114,11 +126,10 @@ pub mod write {
     use arangors::document::options::InsertOptions;
     use async_trait::async_trait;
 
-    use crate::engine::db::Db;
+    use crate::engine::db::{arangodb::aql_snippet, Db};
     use crate::engine::EngineError;
     use crate::io::write::Write;
-    use crate::models::album::Album;
-    use crate::models::DocDetail;
+    use crate::models::{album::Album, DocDetail, RequiredTraits};
 
     #[async_trait]
     impl Write<Album> for Db {
@@ -147,7 +158,7 @@ mod test {
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::Write;
+    use crate::io::write::EngineWrite;
     use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
@@ -183,9 +194,9 @@ mod test {
         let db_album = db.get_all::<Album>().await?;
         let albums = Album::get_all(&db).await?;
 
-        dbg!(db_album);
-        println!("><><><><><><><><><><><><");
-        dbg!(albums);
+        // dbg!(db_album);
+        // println!("><><><><><><><><><><><><");
+        // dbg!(albums);
 
         Ok(())
     }
