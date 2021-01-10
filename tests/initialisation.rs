@@ -5,22 +5,15 @@ pub mod test {
     use std::error::Error;
     use std::sync::Arc;
 
+    use arangors::{ClientError, Collection};
+    use arangors::client::ClientExt;
+    use arangors::client::reqwest::ReqwestClient;
     use tokio::sync::RwLock;
 
     use discuits_api::engine::{db::*, session::*};
-    use arangors::Collection;
-    use discuits_api::models::RequiredTraits;
+    use arangors::collection::options::{CreateOptions, CreateParameters};
 
     pub static mut SESS: Option<Session<Db>> = None;
-    pub static mut COL: Option<Collections<Db, Collection<dyn RequiredTraits>>> = None;
-
-    pub struct Collections<Engine, C> {
-        session : Arc<RwLock<Engine>>,
-        album: Collection<C>,
-        artist: Collection<C>,
-        inventory: Collection<C>,
-        variant: Collection<C>,
-    }
 
     pub type SimpleResult = Result<(), BoxedError>;
     type BoxedError = Box<dyn Error + Sync + Send>;
@@ -42,7 +35,7 @@ pub mod test {
     }
 
     pub async fn with_arangodb() -> Result<Arc<RwLock<Db>>, BoxedError> {
-       let result = unsafe {
+        let result = unsafe {
             if let Some(s) = SESS.as_ref() {
                 Ok(s.clone())
             } else {
@@ -51,21 +44,6 @@ pub mod test {
                 Ok(SESS.as_ref().unwrap().clone())
             }
         };
-
-        let s = result.clone()?;
-        let read = s.read().await;
-
-        let col = Collections {
-            session : s,
-            album: read.db().collection("album").await?,
-            artist: read.db().collection("artist").await?,
-            inventory: read.db().collection("inventory").await?,
-            variant: read.db().collection("variant").await?
-        };
-
-        dbg!(col.album.document_count().await?.detail);
-
-
 
         result
     }
