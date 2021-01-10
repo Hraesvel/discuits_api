@@ -33,8 +33,13 @@ impl Artist {
         }
     }
 
-    pub fn change_id(&mut self, new_id: String) {
+    pub fn change_id(&mut self, new_id: &'static str) {
         self._key = Cow::from(new_id);
+    }
+
+    pub fn name(&mut self, name: &'static str) -> &mut Self {
+        self.name = Cow::from(name);
+        self
     }
 }
 
@@ -45,8 +50,11 @@ impl DocDetail for Artist {
         "artist"
     }
 
-    fn key<'a>(&self) -> String {
+    fn key(&self) -> String {
         self._key.to_string()
+    }
+    fn id(&self) -> String {
+        format!("{}/{}", Self::collection_name(), self._key)
     }
 }
 
@@ -116,7 +124,7 @@ pub mod write {
 
     use crate::engine::db::Db;
     use crate::engine::EngineError;
-    use crate::io::write::Write;
+    use crate::io::write::{EngineWrite, Write};
     use crate::models::artist::Artist;
     use crate::models::DocDetail;
 
@@ -147,7 +155,7 @@ mod test {
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::Write;
+    use crate::io::write::EngineWrite;
     use crate::models::artist::Artist;
 
     type TestResult = Result<(), EngineError>;
