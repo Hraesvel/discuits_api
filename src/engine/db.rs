@@ -4,7 +4,7 @@ use arangors::client::reqwest::ReqwestClient;
 use serde::export::Formatter;
 
 use crate::engine::EngineError;
-use crate::models::RequiredTraits;
+use crate::models::ReqModelTraits;
 
 pub(crate) mod arangodb;
 pub mod ops;

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::models::RequiredTraits;
+use crate::models::ReqModelTraits;
 
 /// Trait for implementing `GET` like methods.
 #[async_trait]
@@ -21,8 +21,8 @@ pub trait EngineGet {
     type E;
 
     /// Method to get all Elements
-    async fn get_all<T: RequiredTraits>(&self) -> Result<Vec<T>, Self::E>;
+    async fn get_all<T: ReqModelTraits>(&self) -> Result<Vec<T>, Self::E>;
 
     /// Method to get a single Element
-    async fn get<T: RequiredTraits>(&self, id: &str) -> Result<T, Self::E>;
+    async fn get<T: ReqModelTraits>(&self, id: &str) -> Result<T, Self::E>;
 }

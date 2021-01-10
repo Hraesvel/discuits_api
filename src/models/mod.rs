@@ -12,7 +12,7 @@ pub mod inventory;
 pub mod variant;
 
 
-pub trait RequiredTraits: serde::de::DeserializeOwned + serde::ser::Serialize + DocDetail + Sync + Send {}
+pub trait ReqModelTraits: serde::de::DeserializeOwned + serde::ser::Serialize + DocDetail + Sync + Send {}
 
 pub trait DocDetail {
     fn collection_name<'a>() -> &'a str;

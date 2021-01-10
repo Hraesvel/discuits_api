@@ -1,6 +1,6 @@
 use std::borrow::{Borrow, Cow};
 
-use crate::models::{DocDetail, RequiredTraits};
+use crate::models::{DocDetail, ReqModelTraits};
 
 /// Album data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -19,7 +19,7 @@ pub struct Album {
     description: Cow<'static, str>,
 }
 
-impl RequiredTraits for Album {}
+impl ReqModelTraits for Album {}
 
 impl Album {
     /// Creates a new blank Album with a unique identifier for `_key`
@@ -72,7 +72,7 @@ pub mod read {
     use crate::engine::db::{arangodb::aql_snippet, Db};
     use crate::engine::EngineError;
     use crate::io::read::Get;
-    use crate::models::{album::Album, DocDetail, RequiredTraits};
+    use crate::models::{album::Album, DocDetail, ReqModelTraits};
 
     #[async_trait]
     impl Get<Db> for Album {
@@ -82,7 +82,7 @@ pub mod read {
         /// Gets all Albums from storage `Db`
         async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
             where
-                Self: RequiredTraits,
+                Self: ReqModelTraits,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -129,7 +129,7 @@ pub mod write {
     use crate::engine::db::{arangodb::aql_snippet, Db};
     use crate::engine::EngineError;
     use crate::io::write::Write;
-    use crate::models::{album::Album, DocDetail, RequiredTraits};
+    use crate::models::{album::Album, DocDetail, ReqModelTraits};
 
     #[async_trait]
     impl Write<Album> for Db {

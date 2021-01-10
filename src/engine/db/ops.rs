@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use crate::engine::db::Db;
 use crate::engine::EngineError;
 use crate::io::{read::EngineGet, write::EngineWrite};
-use crate::models::{DocDetail, RequiredTraits};
+use crate::models::{DocDetail, ReqModelTraits};
 use arangors::{Document, AqlQuery};
 
 
@@ -14,7 +14,7 @@ impl EngineGet for Db {
 
     async fn get_all<T>(&self) -> Result<Vec<T>, Self::E>
         where
-            T: RequiredTraits,
+            T: ReqModelTraits,
     {
         use arangors::{AqlQuery, Cursor};
         use crate::engine::db::arangodb::aql_snippet;
@@ -53,7 +53,7 @@ impl EngineGet for Db {
 impl EngineWrite for Db {
     type E = EngineError;
 
-    async fn insert<T: RequiredTraits>(&self, doc: T) -> Result<(), Self::E>
+    async fn insert<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E>
     {
         // let json = serde_json::to_value(doc).unwrap();
         // let aql = AqlQuery::builder()
@@ -73,7 +73,7 @@ impl EngineWrite for Db {
         Ok(())
     }
 
-    async fn update<T: RequiredTraits>(&self, doc: T) -> Result<(), Self::E> {
+    async fn update<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E> {
         let col = self.db().collection(T::collection_name()).await?;
         let _doc = col.update_document(&doc.key(), doc, UpdateOptions::default()).await?;
         Ok(())

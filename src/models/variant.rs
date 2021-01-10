@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::engine::db::Db;
 use crate::engine::EngineError;
 use crate::io::write::Write;
-use crate::models::{DocDetail, RequiredTraits};
+use crate::models::{DocDetail, ReqModelTraits};
 use crate::models::album::Album;
 use crate::models::inventory::Inventory;
 
@@ -106,7 +106,7 @@ impl DocDetail for Variant {
     }
 }
 
-impl RequiredTraits for Variant {}
+impl ReqModelTraits for Variant {}
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Medium {

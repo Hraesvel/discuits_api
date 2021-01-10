@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::models::RequiredTraits;
+use crate::models::ReqModelTraits;
 
 #[async_trait]
 pub trait Write<T> {
@@ -18,9 +18,9 @@ pub trait EngineWrite {
     type E;
 
     /// Method to inserting a new document
-    async fn insert<T: RequiredTraits>(&self, doc: T) -> Result<(), Self::E>;
+    async fn insert<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E>;
 
     /// Method to updating a single document
-    async fn update<T: RequiredTraits>(&self, doc: T) -> Result<(), Self::E>;
+    async fn update<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E>;
 }
 

@@ -1,7 +1,7 @@
 use std::borrow::{Borrow, Cow};
 
 use crate::models::DocDetail;
-use crate::models::RequiredTraits;
+use crate::models::ReqModelTraits;
 
 /// Artist Data type
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -43,7 +43,7 @@ impl Artist {
     }
 }
 
-impl RequiredTraits for Artist {}
+impl ReqModelTraits for Artist {}
 
 impl DocDetail for Artist {
     fn collection_name<'a>() -> &'a str {
