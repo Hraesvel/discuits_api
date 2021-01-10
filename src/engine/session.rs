@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockReadGuard};
 
 use crate::engine::db::Db;
 use crate::engine::EngineError;
@@ -10,7 +10,10 @@ pub trait NewSession {}
 
 pub struct Session<T>(Arc<RwLock<T>>);
 
-pub trait Engine {}
+// #[async_trait]
+// pub trait Engine {
+//     async fn insert<T: ReqiredTraits>(&self, doc: T) -> Result<(), EngineError>;
+// }
 
 impl<T> Session<T> {
     pub fn from(t: T) -> Result<Session<T>, EngineError> {
@@ -20,6 +23,7 @@ impl<T> Session<T> {
     pub fn clone(&self) -> Arc<RwLock<T>> {
         self.0.clone()
     }
+
 }
 
 #[async_trait]

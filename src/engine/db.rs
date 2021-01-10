@@ -4,7 +4,7 @@ use arangors::client::reqwest::ReqwestClient;
 use serde::export::Formatter;
 
 use crate::engine::EngineError;
-use crate::engine::session::Engine;
+use crate::models::RequiredTraits;
 
 pub(crate) mod arangodb;
 pub mod ops;
@@ -17,11 +17,13 @@ pub enum AuthType<'a> {
     Jwt { user: &'a str, pass: &'a str },
 }
 
+
 #[derive(Debug)]
 pub struct Db {
     conn: Connection,
     db: Database<ReqwestClient>,
 }
+
 
 impl Db {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
@@ -124,7 +126,6 @@ impl<'a> DbBuilder<'a> {
     }
 }
 
-impl Engine for Db {}
 
 #[derive(Debug)]
 pub enum DbError {

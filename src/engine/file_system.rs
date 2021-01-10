@@ -5,7 +5,7 @@ use std::path::Path;
 
 use dashmap::DashMap;
 
-use crate::engine::session::Engine;
+use crate::engine::EngineError;
 
 /// File System for system without a database (ArangoDB) installed
 pub struct FileSystem {
@@ -15,4 +15,9 @@ pub struct FileSystem {
     pub(crate) shards: DashMap<Cow<'static, str>, &'static Path>,
 }
 
-impl Engine for FileSystem {}
+// #[async_trait]
+// impl Engine for FileSystem {
+//     async fn insert<T: ReqiredTraits>(&self, doc: T) -> Result<(), EngineError> {
+//         unimplemented!()
+//     }
+// }
