@@ -5,6 +5,8 @@ use crate::engine::db::Db;
 use crate::engine::EngineError;
 use crate::io::{read::EngineGet, write::EngineWrite};
 use crate::models::{DocDetail, RequiredTraits};
+use arangors::{Document, AqlQuery};
+
 
 #[async_trait]
 impl EngineGet for Db {
@@ -53,9 +55,21 @@ impl EngineWrite for Db {
 
     async fn insert<T: RequiredTraits>(&self, doc: T) -> Result<(), Self::E>
     {
+        // let json = serde_json::to_value(doc).unwrap();
+        // let aql = AqlQuery::builder()
+        //     .query("INSERT @doc INTO @@col let result = NEW RETURN result")
+        //     .bind_var("@col", T::collection_name())
+        //     .bind_var("doc", json)
+        //     .build();
+        // let _r : Vec<T> =  self.db.aql_query(aql).await?;
+
         let io = InsertOptions::builder().overwrite(false).build();
-        let col = self.db().collection(T::collection_name()).await?;
-        let _doc = col.create_document(doc, io).await?;
+        let _col = self
+            .db()
+            .collection(T::collection_name())
+            .await?
+            .create_document(doc, io)
+            .await?;
         Ok(())
     }
 
