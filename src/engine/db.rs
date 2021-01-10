@@ -13,8 +13,15 @@ const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
 pub enum AuthType<'a> {
+    NoAuth,
     Basic { user: &'a str, pass: &'a str },
     Jwt { user: &'a str, pass: &'a str },
+}
+
+impl<'a> Default for AuthType<'a> {
+    fn default() -> Self {
+        AuthType::NoAuth
+    }
 }
 
 
@@ -39,10 +46,10 @@ impl Db {
         Connection::validate_server(self.conn.url().as_str()).await
     }
 
-    /// Checks if a `Connection` go a server is still valid,
-    /// An invalidation can happen if there is a server crashes or restarts while using a `JWT` as the
+    /// Checks if a `Connection` to server is still valid,
+    /// Invalidation can happen if there is a server crashes or restarts while using a `JWT` as the
     /// authentication method.
-    /// This method is intended to be used as a means to automate a reconnection
+    /// This method is intended to be used as a means to create an automation for reconnection.
     pub async fn validate_connection(&self) -> Result<(), EngineError> {
         let _ = self
             .conn
@@ -84,7 +91,7 @@ impl Db {
 
 #[derive(Debug, Default)]
 pub struct DbBuilder<'a> {
-    auth_type: Option<AuthType<'a>>,
+    auth_type: AuthType<'a>,
     host: &'a str,
     db_name: &'a str,
 }
@@ -97,7 +104,7 @@ impl<'a> DbBuilder<'a> {
     }
 
     pub fn auth_type(&mut self, auth: AuthType<'a>) -> &mut Self {
-        self.auth_type = Some(auth);
+        self.auth_type = auth;
         self
     }
 
@@ -109,11 +116,11 @@ impl<'a> DbBuilder<'a> {
     pub async fn connect(&mut self) -> Result<Db, EngineError> {
         if self.host.is_empty() {}
         let conn: Connection = match self.auth_type {
-            None => Connection::establish_without_auth(self.host).await?,
-            Some(AuthType::Basic { user, pass }) => {
+            AuthType::NoAuth => Connection::establish_without_auth(self.host).await?,
+            AuthType::Basic { user, pass } => {
                 Connection::establish_basic_auth(self.host, user, pass).await?
             }
-            Some(AuthType::Jwt { user, pass }) => {
+            AuthType::Jwt { user, pass } => {
                 Connection::establish_jwt(self.host, user, pass).await?
             }
         };
