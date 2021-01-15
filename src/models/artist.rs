@@ -1,10 +1,12 @@
 use std::borrow::{Borrow, Cow};
 
-use crate::models::DocDetail;
-use crate::models::ReqModelTraits;
+use model_write_derive::*;
+
+// use crate::models::DocDetails;
+// use crate::models::ReqModelTraits;
 
 /// Artist Data type
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
 pub struct Artist {
     /// ArangonDb _id
     _id: Cow<'static, str>,
@@ -33,28 +35,21 @@ impl Artist {
         }
     }
 
-    pub fn change_id(&mut self, new_id: &'static str) {
-        self._key = Cow::from(new_id);
+    pub fn change_id<T: Into<Cow<'static, str>>>(&mut self, new_id: T) {
+        self._key = new_id.into();
+    }
+
+    pub fn gen_id(&mut self) -> &mut Self {
+        use uuid::Uuid;
+        let uid = Uuid::new_v4().to_string()[0..8].to_string();
+        self.change_id(uid);
+        self
+
     }
 
     pub fn name(&mut self, name: &'static str) -> &mut Self {
         self.name = Cow::from(name);
         self
-    }
-}
-
-impl ReqModelTraits for Artist {}
-
-impl DocDetail for Artist {
-    fn collection_name<'a>() -> &'a str {
-        "artist"
-    }
-
-    fn key(&self) -> String {
-        self._key.to_string()
-    }
-    fn id(&self) -> String {
-        format!("{}/{}", Self::collection_name(), self._key)
     }
 }
 
@@ -68,7 +63,7 @@ pub mod read {
     use crate::engine::EngineError;
     use crate::io::read::Get;
     use crate::models::artist::Artist;
-    use crate::models::DocDetail;
+    use crate::models::DocDetails;
 
     #[async_trait]
     impl Get<Db> for Artist {
@@ -78,7 +73,7 @@ pub mod read {
         /// Gets all artists from storage `Db`
         async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
             where
-                Self: DocDetail,
+                Self: DocDetails,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -125,25 +120,27 @@ pub mod write {
     use crate::engine::db::Db;
     use crate::engine::EngineError;
     use crate::io::write::{EngineWrite, Write};
+    use crate::models::{DocDetails, ReqModelTraits};
     use crate::models::artist::Artist;
-    use crate::models::DocDetail;
 
-    #[async_trait]
-    impl Write<Artist> for Db {
-        type E = EngineError;
-        type Document = Artist;
-
-        async fn insert(&self, doc: Artist) -> Result<(), EngineError> {
-            let io = InsertOptions::builder().overwrite(false).build();
-            let col = self.db().collection(Artist::collection_name()).await?;
-            let _doc = col.create_document(doc, io).await?;
-            Ok(())
-        }
-
-        async fn update(&self) -> Result<(), Self::E> {
-            unimplemented!()
-        }
-    }
+// #[async_trait]
+    // impl Write<Artist> for Db
+    //     where Artist : ReqModelTraits
+    // {
+    //     type E = EngineError;
+    //     type Document = Artist;
+    //
+    //     async fn insert(&self, doc: Artist) -> Result<(), EngineError> {
+    //         let io = InsertOptions::builder().overwrite(false).build();
+    //         let col = self.db().collection(Artist::collection_name()).await?;
+    //         let _doc = col.create_document(doc, io).await?;
+    //         Ok(())
+    //     }
+    //
+    //     async fn update(&self) -> Result<(), Self::E> {
+    //         unimplemented!()
+    //     }
+    // }
 }
 
 #[cfg(test)]
@@ -155,7 +152,7 @@ mod test {
     use crate::engine::EngineError;
     use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::EngineWrite;
+    use crate::io::write::Write;
     use crate::models::artist::Artist;
 
     type TestResult = Result<(), EngineError>;

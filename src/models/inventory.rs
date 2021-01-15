@@ -1,15 +1,15 @@
 use std::borrow::Cow;
 
 use arangors::document::options::InsertOptions;
-use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::engine::db::Db;
 use crate::engine::EngineError;
-use crate::io::write::Write;
-use crate::models::DocDetail;
+// use crate::models::{DocDetails, ReqModelTraits};
+use model_write_derive::*;
+// use crate::models::ReqModelTraits;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, ModelTrait, WriteToArango,Default, Deserialize, Serialize)]
 pub struct Inventory {
     _id: Cow<'static, str>,
     _key: Cow<'static, str>,
@@ -31,34 +31,35 @@ impl Inventory {
     }
 }
 
-impl DocDetail for Inventory {
-    /// Returns data type name used by DB.
-    /// Helper function to  avoid hard coding a collection's name in business logic code
-    fn collection_name<'a>() -> &'a str {
-        "inventory"
-    }
+// impl DocDetails for Inventory {
+//     /// Returns data type name used by DB.
+//     /// Helper function to  avoid hard coding a collection's name in business logic code
+//     fn collection_name<'a>() -> &'a str {
+//         "inventory"
+//     }
+//
+//     fn key(&self) -> String {
+//         self._key.to_string()
+//     }
+//
+//     fn id(&self) -> String {
+//         format!("{}/{}", Self::collection_name(), self._key)
+//     }
+// }
 
-    fn key(&self) -> String {
-        self._key.to_string()
-    }
-
-    fn id(&self) -> String {
-        format!("{}/{}", Self::collection_name(), self._key)
-    }
-}
-
-#[async_trait]
-impl Write<Inventory> for Db {
-    type E = EngineError;
-    type Document = Inventory;
-
-    async fn insert(&self, doc: Inventory) -> Result<(), EngineError> {
-        let col = self.db().collection("inventory").await?;
-        col.create_document(doc, InsertOptions::default()).await?;
-        Ok(())
-    }
-
-    async fn update(&self) -> Result<(), Self::E> {
-        unimplemented!()
-    }
-}
+// #[async_trait]
+// impl Write<Inventory> for Db
+//     where Inventory: ReqModelTraits {
+//     type E = EngineError;
+//     type Document = Inventory;
+//
+//     async fn insert(&self, doc: Inventory) -> Result<(), EngineError> {
+//         let col = self.db().collection("inventory").await?;
+//         col.create_document(doc, InsertOptions::default()).await?;
+//         Ok(())
+//     }
+//
+//     async fn update(&self) -> Result<(), Self::E> {
+//         unimplemented!()
+//     }
+// }

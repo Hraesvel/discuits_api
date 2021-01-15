@@ -1,17 +1,16 @@
 use std::borrow::Cow;
 
 use arangors::document::options::InsertOptions;
-use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::engine::db::Db;
 use crate::engine::EngineError;
-use crate::io::write::Write;
-use crate::models::{DocDetail, ReqModelTraits};
+use crate::models::{DocDetails, ReqModelTraits};
 use crate::models::album::Album;
 use crate::models::inventory::Inventory;
+use model_write_derive::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, WriteToArango, Serialize, Deserialize)]
 struct Variant {
     _id: Cow<'static, str>,
     _key: Cow<'static, str>,
@@ -92,7 +91,7 @@ impl Variant {
     }
 }
 
-impl DocDetail for Variant {
+impl DocDetails for Variant {
     fn collection_name<'a>() -> &'a str {
         "variant"
     }
@@ -158,7 +157,7 @@ mod test {
 
     use crate::engine::db::test::common;
     use crate::engine::EngineError;
-    use crate::io::write::EngineWrite;
+    use crate::io::write::Write;
     use crate::models::variant::Variant;
 
     type TestResult = Result<(), EngineError>;
