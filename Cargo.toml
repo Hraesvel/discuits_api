@@ -14,6 +14,7 @@ lto = true
 
 
 [dependencies]
+model-write-derive = {path = "./model-write-derive"}
 lazy_static = "1.4.0"
 tokio = { version = "*", features = ["full", "macros", "sync"] }
 async-trait = "^0.1"
@@ -25,3 +26,4 @@ dashmap = "^3"
 
 [dev-dependencies]
 tokio = { version = "*", features = ["full", "macros"] }
+futures = "0.3"
