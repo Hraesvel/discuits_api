@@ -3,7 +3,8 @@ use async_trait::async_trait;
 use crate::models::ReqModelTraits;
 
 #[async_trait]
-pub trait Write<T> {
+pub trait Write<T>
+    where T : ReqModelTraits {
     type E;
     type Document;
 
