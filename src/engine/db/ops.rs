@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use crate::engine::db::Db;
 use crate::engine::EngineError;
 use crate::io::{read::EngineGet, write::EngineWrite};
-use crate::models::{DocDetail, ReqModelTraits};
+use crate::models::{DocDetails, ReqModelTraits};
 use arangors::{Document, AqlQuery};
 
 
