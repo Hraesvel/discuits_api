@@ -1,23 +1,26 @@
-use arangors::document::options::{InsertOptions, UpdateOptions};
+use std::collections::HashMap;
+
+use arangors::document::options::{InsertOptions, RemoveOptions, UpdateOptions};
+use arangors::document::response::DocumentResponse;
+use arangors::{AqlQuery, Document};
 use async_trait::async_trait;
+use serde::de::DeserializeOwned;
 
 use crate::engine::db::Db;
-use crate::engine::EngineError;
-use crate::io::{read::EngineGet, write::EngineWrite};
-use crate::models::{DocDetails, ReqModelTraits};
-use arangors::{Document, AqlQuery};
-
+use crate::engine::{DbError, EngineError};
+use crate::io::{delete::EngineDelete, read::EngineGet, write::EngineWrite};
+use crate::models::{BoxedDoc, DocDetails, ReqModelTraits};
 
 #[async_trait]
 impl EngineGet for Db {
     type E = EngineError;
 
     async fn get_all<T>(&self) -> Result<Vec<T>, Self::E>
-        where
-            T: ReqModelTraits,
+    where
+        T: ReqModelTraits,
     {
-        use arangors::{AqlQuery, Cursor};
         use crate::engine::db::arangodb::aql_snippet;
+        use arangors::{AqlQuery, Cursor};
 
         let query = AqlQuery::builder()
             .query(aql_snippet::GET_ALL)
@@ -53,29 +56,46 @@ impl EngineGet for Db {
 impl EngineWrite for Db {
     type E = EngineError;
 
-    async fn insert<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E>
-    {
-        // let json = serde_json::to_value(doc).unwrap();
-        // let aql = AqlQuery::builder()
-        //     .query("INSERT @doc INTO @@col let result = NEW RETURN result")
-        //     .bind_var("@col", T::collection_name())
-        //     .bind_var("doc", json)
-        //     .build();
-        // let _r : Vec<T> =  self.db.aql_query(aql).await?;
-
+    async fn insert<T: ReqModelTraits + BoxedDoc + 'static>(
+        &self,
+        doc: T,
+    ) -> Result<(String, Box<dyn BoxedDoc>), Self::E> {
         let io = InsertOptions::builder().overwrite(false).build();
         let _col = self
             .db()
             .collection(T::collection_name())
             .await?
-            .create_document(doc, io)
+            .create_document::<T>(doc.clone(), io)
             .await?;
-        Ok(())
+        Ok((doc.id(), Box::new(doc)))
     }
 
     async fn update<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E> {
         let col = self.db().collection(T::collection_name()).await?;
-        let _doc = col.update_document(&doc.key(), doc, UpdateOptions::default()).await?;
+        let _updated_doc = col
+            .update_document::<T>(&doc.key(), doc.clone(), UpdateOptions::default())
+            .await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl EngineDelete for Db {
+    type E = EngineError;
+
+    async fn remove<T>(&self, id: &str) -> Result<T, Self::E>
+    where
+        T: DeserializeOwned + Send + Sync,
+    {
+        let parse = id.split('/').collect::<Vec<&str>>();
+        let query = format!(
+            r#"REMOVE '{key}' in '{id}'
+            let removed = OLD
+            RETURN removed"#,
+            id = parse[0],
+            key = parse[1]
+        );
+        let value: Vec<T> = self.db.aql_str(&query).await?;
+        value.into_iter().nth(0).ok_or(DbError::ParseFail.into())
     }
 }

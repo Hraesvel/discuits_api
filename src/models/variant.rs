@@ -1,16 +1,14 @@
 use std::borrow::Cow;
 
 use arangors::document::options::InsertOptions;
+use model_write_derive::*;
 use uuid::Uuid;
 
 use crate::engine::db::Db;
-use crate::engine::EngineError;
-use crate::models::{DocDetails, ReqModelTraits};
 use crate::models::album::Album;
 use crate::models::inventory::Inventory;
-use model_write_derive::*;
 
-#[derive(Debug, WriteToArango, Serialize, Deserialize)]
+#[derive(Debug, Clone, ModelTrait, WriteToArango, Serialize, Deserialize)]
 struct Variant {
     _id: Cow<'static, str>,
     _key: Cow<'static, str>,
@@ -91,23 +89,7 @@ impl Variant {
     }
 }
 
-impl DocDetails for Variant {
-    fn collection_name<'a>() -> &'a str {
-        "variant"
-    }
-
-    fn key(&self) -> String {
-        self._key.to_string()
-    }
-
-    fn id(&self) -> String {
-        format!("{}/{}", Self::collection_name(), self._key)
-    }
-}
-
-impl ReqModelTraits for Variant {}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Medium {
     Vinyl,
     CD,
@@ -116,7 +98,7 @@ enum Medium {
 
 /// Quality rating is based off of Discogs
 /// https://support.discogs.com/hc/en-us/articles/360001566193-How-To-Grade-Items
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Quality {
     F,
     G,
@@ -128,7 +110,7 @@ enum Quality {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Edition {
     Standard,
     Limited,

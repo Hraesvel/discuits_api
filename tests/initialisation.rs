@@ -8,10 +8,18 @@ pub mod test {
     use arangors::{ClientError, Collection};
     use arangors::client::ClientExt;
     use arangors::client::reqwest::ReqwestClient;
-    use tokio::sync::RwLock;
+    use arangors::collection::options::{CreateOptions, CreateParameters};
+    use lazy_static::lazy_static;
+    use tokio::sync::{Mutex, RwLock};
 
     use discuits_api::engine::{db::*, session::*};
-    use arangors::collection::options::{CreateOptions, CreateParameters};
+
+    lazy_static! {
+        pub static ref used_ids : Mutex<Vec<String>> = {
+            let mut u = vec![];
+            Mutex::new(u)
+        };
+    }
 
     pub static mut SESS: Option<Session<Db>> = None;
 

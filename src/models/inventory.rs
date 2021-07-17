@@ -4,12 +4,9 @@ use arangors::document::options::InsertOptions;
 use uuid::Uuid;
 
 use crate::engine::db::Db;
-use crate::engine::EngineError;
-// use crate::models::{DocDetails, ReqModelTraits};
 use model_write_derive::*;
-// use crate::models::ReqModelTraits;
 
-#[derive(Debug, ModelTrait, WriteToArango,Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, ModelTrait, WriteToArango,Default, Deserialize, Serialize)]
 pub struct Inventory {
     _id: Cow<'static, str>,
     _key: Cow<'static, str>,

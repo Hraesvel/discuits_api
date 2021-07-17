@@ -1,12 +1,17 @@
 use async_trait::async_trait;
+use crate::models::ReqModelTraits;
+use serde::de::DeserializeOwned;
 
 #[async_trait]
 pub trait Delete<T> {
-    async fn remove(id: &str) -> std::io::Result<()>;
+    type E;
+    async fn take(&self, id: &str) -> Result<T, Self::E>;
 }
 
 
 #[async_trait]
-pub trait EngineDelete<T> {
-    async fn remove(self, id: &str) -> std::io::Result<()>;
+pub trait EngineDelete {
+    type E;
+
+    async fn remove<T>(&self, id: &str) -> Result<T, Self::E> where T: DeserializeOwned + Send + Sync;
 }

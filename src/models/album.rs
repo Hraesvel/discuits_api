@@ -1,10 +1,9 @@
 use std::borrow::{Borrow, Cow};
 
-use crate::models::{DocDetails, ReqModelTraits};
 use model_write_derive::*;
 
 /// Album data type
-#[derive(Debug, WriteToArango,Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
 pub struct Album {
     /// field that reflects ArangoDB's `_id`
     _id: Cow<'static, str>,
@@ -20,7 +19,6 @@ pub struct Album {
     description: Cow<'static, str>,
 }
 
-impl ReqModelTraits for Album {}
 
 impl Album {
     /// Creates a new blank Album with a unique identifier for `_key`
@@ -46,7 +44,6 @@ impl Album {
         let uid = Uuid::new_v4().to_string()[0..8].to_string();
         self.change_id(uid);
         self
-
     }
 
     pub fn name(&mut self, name: &'static str) -> &mut Self {
@@ -57,21 +54,6 @@ impl Album {
     pub fn description(&mut self, desc: &'static str) -> &mut Self {
         self.description = Cow::from(desc);
         self
-    }
-}
-
-impl DocDetails for Album {
-    /// Returns data type name used by DB.
-    /// Helper function to avoid hard coding a collection's name in business logic code
-    fn collection_name<'a>() -> &'a str {
-        "album"
-    }
-
-    fn key(&self) -> String {
-        self._key.to_string()
-    }
-    fn id(&self) -> String {
-        format!("{}/{}", Self::collection_name(), self._key)
     }
 }
 
@@ -132,36 +114,13 @@ pub mod read {
     }
 }
 
-pub mod write {
-    //! module for handling writes for album
-    use arangors::document::options::InsertOptions;
 
-    use crate::engine::db::{arangodb::aql_snippet, Db};
-    use crate::engine::EngineError;
-    use crate::io::write::Write;
-    use crate::models::{album::Album, DocDetails, ReqModelTraits};
 
-    // #[async_trait]
-    // impl Write<Album> for Db {
-    //     type E = EngineError;
-    //     type Document = Album;
-    //
-    //     async fn insert(&self, doc: Album) -> Result<(), EngineError> {
-    //         let io = InsertOptions::builder().overwrite(false).build();
-    //         let col = self.db().collection(Album::collection_name()).await?;
-    //         let _doc = col.create_document(doc, io).await?;
-    //         Ok(())
-    //     }
-    //
-    //     async fn update(&self) -> Result<(), Self::E> {
-    //         unimplemented!()
-    //     }
-    // }
-}
 
 #[cfg(test)]
 mod test {
     use std::borrow::Cow;
+
     use crate::engine::db::{AuthType, Db};
     use crate::engine::db::test::common;
     use crate::engine::EngineError;
@@ -200,12 +159,10 @@ mod test {
     async fn test_get_all_albums() -> TestResult {
         let db = common().await?;
 
-        let db_album = db.get_all::<Album>().await?;
-        let albums = Album::get_all(&db).await?;
+        let engine_read_trait = db.get_all::<Album>().await?;
+        let implicit_get_from_db = Album::get_all(&db).await?;
 
-        // dbg!(db_album);
-        // println!("><><><><><><><><><><><><");
-        // dbg!(albums);
+        assert_eq!(engine_read_trait.len(), implicit_get_from_db.len());
 
         Ok(())
     }

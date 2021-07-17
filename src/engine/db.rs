@@ -1,9 +1,11 @@
+use std::borrow::Cow;
+
 #[warn(missing_docs)]
 use arangors::{ClientError, Connection, Database};
 use arangors::client::reqwest::ReqwestClient;
 use serde::export::Formatter;
 
-use crate::engine::EngineError;
+use crate::engine::{DbError, EngineError};
 use crate::models::ReqModelTraits;
 
 pub(crate) mod arangodb;
@@ -24,13 +26,11 @@ impl<'a> Default for AuthType<'a> {
     }
 }
 
-
 #[derive(Debug)]
 pub struct Db {
     conn: Connection,
     db: Database<ReqwestClient>,
 }
-
 
 impl Db {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
@@ -49,21 +49,18 @@ impl Db {
     /// Checks if a `Connection` to server is still valid,
     /// Invalidation can happen if there is a server crashes or restarts while using a `JWT` as the
     /// authentication method.
-    /// This method is intended to be used as a means to create an automation for reconnection.
+    /// This method is intended to be used as a means to create an automations process for reconnecting.
     pub async fn validate_connection(&self) -> Result<(), EngineError> {
-        let _ = self
-            .conn
-            .session()
-            .0
-            .get("http://127.0.0.1:8529/_db")
-            .send()
-            .await?;
+        let url = format!("{}/_db", self.db.url());
+        let _ = self.conn.session().0.get(&url).send().await?;
         Ok(())
     }
 
     pub async fn validate_db(&self) -> Result<(), EngineError> {
         let db = format!(
-            "http://127.0.0.1:8529/_db/{}/_api/simple/any",
+            "http://{}:{}/_db/{}/_api/simple/any",
+            self.db.url().host().unwrap(),
+            self.db.url().port().unwrap(),
             self.db.name()
         );
         self.conn.session().0.put(&db).send().await?;
@@ -89,6 +86,7 @@ impl Db {
     }
 }
 
+/// Builder for `Db` (database) struct
 #[derive(Debug, Default)]
 pub struct DbBuilder<'a> {
     auth_type: AuthType<'a>,
@@ -103,18 +101,25 @@ impl<'a> DbBuilder<'a> {
         self
     }
 
+    /// Configure authentication type
     pub fn auth_type(&mut self, auth: AuthType<'a>) -> &mut Self {
         self.auth_type = auth;
         self
     }
 
+    /// Configure the database name
     pub fn db_name(&mut self, db_nam: &'a str) -> &mut Self {
         self.db_name = db_nam;
         self
     }
 
+    /// Attempt to connect to the Db
     pub async fn connect(&mut self) -> Result<Db, EngineError> {
-        if self.host.is_empty() {}
+        if self.host.is_empty() {
+            return Err(DbError::NoHostProvided.into());
+        } else if self.db_name.is_empty() {
+            return Err(DbError::BlankDatabaseName.into());
+        }
         let conn: Connection = match self.auth_type {
             AuthType::NoAuth => Connection::establish_without_auth(self.host).await?,
             AuthType::Basic { user, pass } => {
@@ -127,29 +132,14 @@ impl<'a> DbBuilder<'a> {
 
         let db = conn.db(self.db_name).await?;
 
-        let database: Db = Db { conn, db };
+        let database: Db = Db {
+            conn,
+            db,
+        };
 
         Ok(database)
     }
 }
-
-
-#[derive(Debug)]
-pub enum DbError {
-    MissHost,
-    MissDbName,
-}
-
-impl std::fmt::Display for DbError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DbError::MissHost => write!(f, "Empty host address was likely provided"),
-            DbError::MissDbName => write!(f, "No database name was given"),
-        }
-    }
-}
-
-impl std::error::Error for DbError {}
 
 #[cfg(test)]
 pub(crate) mod test {
