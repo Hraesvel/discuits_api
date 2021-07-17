@@ -1,4 +1,4 @@
-# Discket API
+# Discuits API
 prototype for a music album collection and inventory system.
 
 ## Licenses
