@@ -115,11 +115,11 @@ pub mod read {
 }
 
 
-
-
 #[cfg(test)]
 mod test {
     use std::borrow::Cow;
+
+    use tokio::time::{delay_for, Duration};
 
     use crate::engine::db::{AuthType, Db};
     use crate::engine::db::test::common;
@@ -159,6 +159,7 @@ mod test {
     async fn test_get_all_albums() -> TestResult {
         let db = common().await?;
 
+        delay_for(Duration::from_secs(2)).await;
         let engine_read_trait = db.get_all::<Album>().await?;
         let implicit_get_from_db = Album::get_all(&db).await?;
 

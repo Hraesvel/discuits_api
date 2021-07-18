@@ -151,6 +151,7 @@ mod test {
         v._from = Cow::from("album/7782da0a");
         v._to = Cow::from("inventory/1158719");
         v.details = Cow::from("Test Variant");
-        dbg!(db.insert(v).await)
+        dbg!(db.insert(v).await);
+        Ok(())
     }
 }

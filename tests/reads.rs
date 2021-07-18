@@ -4,7 +4,7 @@ pub mod initialisation;
 mod test {
     use std::sync::Arc;
 
-    use tokio::prelude::io::AsyncReadExt;
+    use tokio::io::AsyncReadExt;
     use tokio::sync::{RwLock, RwLockReadGuard};
 
     use discuits_api::engine::db::Db;
