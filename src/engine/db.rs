@@ -3,7 +3,7 @@ use std::borrow::Cow;
 #[warn(missing_docs)]
 use arangors::{ClientError, Connection, Database};
 use arangors::client::reqwest::ReqwestClient;
-use serde::export::Formatter;
+use serde::__private::Formatter;
 
 use crate::engine::{DbError, EngineError};
 use crate::models::ReqModelTraits;
@@ -11,6 +11,7 @@ use crate::models::ReqModelTraits;
 pub(crate) mod arangodb;
 pub mod ops;
 
+// Temporary host address - ArangoDB default
 const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
@@ -52,7 +53,7 @@ impl Db {
     /// This method is intended to be used as a means to create an automations process for reconnecting.
     pub async fn validate_connection(&self) -> Result<(), EngineError> {
         let url = format!("{}/_db", self.db.url());
-        let _ = self.conn.session().0.get(&url).send().await?;
+        let _ = self.conn.session().client.get(&url).send().await?;
         Ok(())
     }
 
@@ -63,7 +64,7 @@ impl Db {
             self.db.url().port().unwrap(),
             self.db.name()
         );
-        self.conn.session().0.put(&db).send().await?;
+        self.conn.session().client.put(&db).send().await?;
         Ok(())
     }
 
