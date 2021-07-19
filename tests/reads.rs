@@ -7,7 +7,7 @@ mod test {
     use tokio::io::AsyncReadExt;
     use tokio::sync::{RwLock, RwLockReadGuard};
 
-    use discuits_api::engine::db::Db;
+    use discuits_api::engine::db::arangodb::ArangoDb;
     use discuits_api::engine::session::Session;
     use discuits_api::io::read::EngineGet;
     use discuits_api::models::{album::*, artist::*};

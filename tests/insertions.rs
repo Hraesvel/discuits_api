@@ -7,10 +7,10 @@ mod test_generics {
 
     use tokio::macros::support::Future;
 
-    use discuits_api::engine::db::Db;
-    use discuits_api::engine::EngineError;
+    use discuits_api::engine::db::arangodb::ArangoDb;
     use discuits_api::engine::session::Session;
-    use discuits_api::io::delete::{EngineDelete, Delete};
+    use discuits_api::engine::EngineError;
+    use discuits_api::io::delete::{Delete, EngineDelete};
     use discuits_api::io::write::EngineWrite;
     use discuits_api::models::{album::*, artist::*, ReqModelTraits};
 
@@ -24,7 +24,10 @@ mod test_generics {
 
         let mut album = Album::new();
         let mut artist = Artist::new();
-        album.name("album test").description("insert made by test").change_id("12345");
+        album
+            .name("album test")
+            .description("insert made by test")
+            .change_id("12345");
 
         let mut artist = Artist::new();
         artist.name("artist test").change_id("12345");
@@ -46,7 +49,8 @@ mod test_generics {
         let resp = futures::future::join_all(v).await;
         let mut all_ids = used_ids.lock().await;
         // return Ok(());
-        let mut ids = resp.into_iter()
+        let mut ids = resp
+            .into_iter()
             .filter(|x| x.is_ok())
             .map(|x| x.unwrap().0)
             .collect::<Vec<String>>();
@@ -60,17 +64,15 @@ mod test_generics {
             let _ = db.remove::<Value>(&id).await?;
         }
 
-
         Ok(())
     }
 }
-
 
 #[cfg(test)]
 mod test_mono {
     use std::sync::RwLockReadGuard;
 
-    use discuits_api::engine::db::Db;
+    use discuits_api::engine::db::arangodb::ArangoDb;
     use discuits_api::engine::session::Session;
     use discuits_api::io::write::Write;
     use discuits_api::models::{album::*, artist::*};
@@ -84,7 +86,10 @@ mod test_mono {
 
         let mut album = Album::new();
         let mut artist = Artist::new();
-        album.name("album test").description("insert made by test").gen_id();
+        album
+            .name("album test")
+            .description("insert made by test")
+            .gen_id();
 
         let mut artist = Artist::new();
         artist.name("artist test").gen_id();
@@ -99,7 +104,6 @@ mod test_mono {
         v.push(db.insert(artist.clone().gen_id().to_owned()));
         v.push(db.insert(album.clone().gen_id().to_owned()));
         v.push(db.insert(artist.clone().gen_id().to_owned()));
-
 
         let r = futures::future::join_all(v).await;
         dbg!(r);

@@ -5,30 +5,31 @@ pub mod test {
     use std::error::Error;
     use std::sync::Arc;
 
-    use arangors::{ClientError, Collection};
-    use arangors::client::ClientExt;
     use arangors::client::reqwest::ReqwestClient;
+    use arangors::client::ClientExt;
     use arangors::collection::options::{CreateOptions, CreateParameters};
+    use arangors::{ClientError, Collection};
     use lazy_static::lazy_static;
     use tokio::sync::{Mutex, RwLock};
 
+    use discuits_api::engine::db::arangodb::ArangoDb;
     use discuits_api::engine::{db::*, session::*};
 
     lazy_static! {
-        pub static ref used_ids : Mutex<Vec<String>> = {
+        pub static ref used_ids: Mutex<Vec<String>> = {
             let mut u = vec![];
             Mutex::new(u)
         };
     }
 
-    pub static mut SESS: Option<Session<Db>> = None;
+    pub static mut SESS: Option<Session<ArangoDb>> = None;
 
     pub type SimpleResult = Result<(), BoxedError>;
     type BoxedError = Box<dyn Error + Sync + Send>;
 
     /// Creates a server session using ArangoDb as the database
-    pub async fn setup_with_arangodb() -> Result<Session<Db>, BoxedError> {
-        let database = Db::new()
+    pub async fn setup_with_arangodb() -> Result<Session<ArangoDb>, BoxedError> {
+        let database = ArangoDb::new()
             .auth_type(AuthType::Jwt {
                 user: "discket_test",
                 pass: "",
@@ -37,12 +38,11 @@ pub mod test {
             .connect()
             .await?;
 
-
         let session = Session::from(database)?;
         Ok(session)
     }
 
-    pub async fn with_arangodb() -> Result<Arc<RwLock<Db>>, BoxedError> {
+    pub async fn with_arangodb() -> Result<Arc<RwLock<ArangoDb>>, BoxedError> {
         let result = unsafe {
             if let Some(s) = SESS.as_ref() {
                 Ok(s.clone())
@@ -55,7 +55,6 @@ pub mod test {
 
         result
     }
-
 
     #[tokio::test]
     async fn create_session_db_test() -> SimpleResult {
