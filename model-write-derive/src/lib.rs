@@ -44,7 +44,7 @@ pub fn basic_arangodb_write(input: proc_macro::TokenStream) -> proc_macro::Token
             use crate::engine::EngineError;
 
             #[async_trait]
-            impl Delete<#name> for crate::engine::db::Db
+            impl Delete<#name> for crate::engine::db::ArangoDb
             {
                     type E = crate::engine::EngineError;
                     // type Doc = #name;
@@ -68,7 +68,7 @@ pub fn basic_arangodb_write(input: proc_macro::TokenStream) -> proc_macro::Token
 
 
         #[async_trait]
-        impl Write< # name > for crate::engine::db::Db
+        impl Write< #name > for crate::engine::db::ArangoDb
         where # name: crate::models::ReqModelTraits
         {
             type E = crate::engine::EngineError;

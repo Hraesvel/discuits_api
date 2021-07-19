@@ -15,20 +15,28 @@ pub enum DbError {
     ParseFail,
 }
 
-
 impl std::fmt::Display for DbError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            DbError::NoHostProvided => write!(f, "{:?}: A host was not provided to the builder.", self),
-            DbError::BlankDatabaseName => write!(f, "{:?}, No Name of the Database was provided to the builder.", self),
-            DbError::InvalidIdentification => {write!(f, "{:?}", self)}
-            DbError::ParseFail => {write!(f, "{:?}", self)}
+            DbError::NoHostProvided => {
+                write!(f, "{:?}: A host was not provided to the builder.", self)
+            }
+            DbError::BlankDatabaseName => write!(
+                f,
+                "{:?}, No Name of the Database was provided to the builder.",
+                self
+            ),
+            DbError::InvalidIdentification => {
+                write!(f, "{:?}", self)
+            }
+            DbError::ParseFail => {
+                write!(f, "{:?}", self)
+            }
         }
     }
 }
 
 impl std::error::Error for DbError {}
-
 
 #[cfg(test)]
 mod test {

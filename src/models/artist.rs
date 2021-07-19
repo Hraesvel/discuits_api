@@ -44,7 +44,6 @@ impl Artist {
         let uid = Uuid::new_v4().to_string()[0..8].to_string();
         self.change_id(uid);
         self
-
     }
 
     pub fn name(&mut self, name: &'static str) -> &mut Self {
@@ -59,21 +58,21 @@ pub mod read {
     use async_trait::async_trait;
 
     use crate::engine::db::arangodb::aql_snippet;
-    use crate::engine::db::Db;
+    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::EngineError;
     use crate::io::read::Get;
     use crate::models::artist::Artist;
     use crate::models::DocDetails;
 
     #[async_trait]
-    impl Get<Db> for Artist {
+    impl Get<ArangoDb> for Artist {
         type E = EngineError;
         type Document = Self;
 
         /// Gets all artists from storage `Db`
-        async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
-            where
-                Self: DocDetails,
+        async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
+        where
+            Self: DocDetails,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -99,7 +98,7 @@ pub mod read {
         }
 
         /// Gets a single artists from storage `Db`
-        async fn get(id: &str, engine: &Db) -> Result<Self::Document, Self::E> {
+        async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
             let col: Self = engine
                 .db()
                 .collection("artist")
@@ -117,13 +116,13 @@ pub mod write {
     use arangors::document::options::InsertOptions;
     use async_trait::async_trait;
 
-    use crate::engine::db::Db;
+    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::EngineError;
     use crate::io::write::{EngineWrite, Write};
-    use crate::models::{DocDetails, ReqModelTraits};
     use crate::models::artist::Artist;
+    use crate::models::{DocDetails, ReqModelTraits};
 
-// #[async_trait]
+    // #[async_trait]
     // impl Write<Artist> for Db
     //     where Artist : ReqModelTraits
     // {
@@ -147,10 +146,11 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
-    use crate::engine::db::{AuthType, Db};
+    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::test::common;
-    use crate::engine::EngineError;
+    use crate::engine::db::AuthType;
     use crate::engine::session::test::common_session_db;
+    use crate::engine::EngineError;
     use crate::io::read::{EngineGet, Get};
     use crate::io::write::Write;
     use crate::models::artist::Artist;

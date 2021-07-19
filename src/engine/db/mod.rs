@@ -1,15 +1,16 @@
 use std::borrow::Cow;
 
+use arangors::client::reqwest::ReqwestClient;
 #[warn(missing_docs)]
 use arangors::{ClientError, Connection, Database};
-use arangors::client::reqwest::ReqwestClient;
 use serde::__private::Formatter;
 
 use crate::engine::{DbError, EngineError};
 use crate::models::ReqModelTraits;
 
-pub(crate) mod arangodb;
-pub mod ops;
+pub mod arangodb;
+
+pub use arangodb::ArangoDb;
 
 // Temporary host address - ArangoDB default
 const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
@@ -27,63 +28,11 @@ impl<'a> Default for AuthType<'a> {
     }
 }
 
-#[derive(Debug)]
-pub struct Db {
-    conn: Connection,
-    db: Database<ReqwestClient>,
-}
+pub struct Db<T>(T);
 
-impl Db {
-    /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
-    /// host can be altered using the method `DbBuilder::host(&mut self, host: &'static str)`.
-    pub fn new<'a>() -> DbBuilder<'a> {
-        let mut builder = DbBuilder::default();
-        builder.host = DEFAULT_HOST;
-        builder
-    }
-
-    /// Check if a url to a server is still valid.
-    pub async fn validate_server(&self) -> Result<(), ClientError> {
-        Connection::validate_server(self.conn.url().as_str()).await
-    }
-
-    /// Checks if a `Connection` to server is still valid,
-    /// Invalidation can happen if there is a server crashes or restarts while using a `JWT` as the
-    /// authentication method.
-    /// This method is intended to be used as a means to create an automations process for reconnecting.
-    pub async fn validate_connection(&self) -> Result<(), EngineError> {
-        let url = format!("{}/_db", self.db.url());
-        let _ = self.conn.session().client.get(&url).send().await?;
-        Ok(())
-    }
-
-    pub async fn validate_db(&self) -> Result<(), EngineError> {
-        let db = format!(
-            "http://{}:{}/_db/{}/_api/simple/any",
-            self.db.url().host().unwrap(),
-            self.db.url().port().unwrap(),
-            self.db.name()
-        );
-        self.conn.session().client.put(&db).send().await?;
-        Ok(())
-    }
-
-    /// JWT token can become invalid if the database is reset.
-    /// This method attempts to reconnect (revalidate) the database, used existing information.
-    pub async fn reconnect_jwt<'a>(
-        &mut self,
-        usr: &'a str,
-        pass: &'a str,
-    ) -> Result<(), EngineError> {
-        let new_conn = Connection::establish_jwt(self.conn.url().as_str(), usr, pass).await?;
-
-        self.db = new_conn.db(self.db.name()).await?;
-        self.conn = new_conn;
-        Ok(())
-    }
-
+impl Db<ArangoDb> {
     pub fn db(&self) -> &Database<ReqwestClient> {
-        &self.db
+        &self.0.db
     }
 }
 
@@ -115,7 +64,7 @@ impl<'a> DbBuilder<'a> {
     }
 
     /// Attempt to connect to the Db
-    pub async fn connect(&mut self) -> Result<Db, EngineError> {
+    pub async fn connect(&mut self) -> Result<ArangoDb, EngineError> {
         if self.host.is_empty() {
             return Err(DbError::NoHostProvided.into());
         } else if self.db_name.is_empty() {
@@ -133,10 +82,7 @@ impl<'a> DbBuilder<'a> {
 
         let db = conn.db(self.db_name).await?;
 
-        let database: Db = Db {
-            conn,
-            db,
-        };
+        let database: ArangoDb = ArangoDb { conn, db };
 
         Ok(database)
     }
@@ -146,18 +92,19 @@ impl<'a> DbBuilder<'a> {
 pub(crate) mod test {
     use tokio;
 
+    use crate::engine::db::arangodb::ArangoDb;
+    use crate::engine::db::AuthType;
     use crate::engine::db::*;
-    use crate::engine::db::{AuthType, Db};
-    use crate::engine::EngineError;
-    use crate::engine::session::Session;
     use crate::engine::session::test::common_session_db;
+    use crate::engine::session::Session;
+    use crate::engine::EngineError;
 
-    pub async fn common() -> Result<Db, EngineError> {
+    pub async fn common() -> Result<ArangoDb, EngineError> {
         let auth = AuthType::Basic {
             user: "discket",
             pass: "babyYoda",
         };
-        let db = Db::new()
+        let db = ArangoDb::new()
             .auth_type(auth)
             .db_name("discket_dev")
             .connect()
@@ -213,7 +160,7 @@ pub(crate) mod test {
         {
             let mut new_db = db.write().await;
 
-            *new_db = Db::new()
+            *new_db = ArangoDb::new()
                 .db_name("discket_test")
                 .auth_type(AuthType::Jwt {
                     user: "discket_test",

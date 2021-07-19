@@ -3,10 +3,10 @@ use std::borrow::Cow;
 use arangors::document::options::InsertOptions;
 use uuid::Uuid;
 
-use crate::engine::db::Db;
+use crate::engine::db::arangodb::ArangoDb;
 use model_write_derive::*;
 
-#[derive(Debug, Clone, ModelTrait, WriteToArango,Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, ModelTrait, WriteToArango, Default, Deserialize, Serialize)]
 pub struct Inventory {
     _id: Cow<'static, str>,
     _key: Cow<'static, str>,

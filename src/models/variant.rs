@@ -4,7 +4,7 @@ use arangors::document::options::InsertOptions;
 use model_write_derive::*;
 use uuid::Uuid;
 
-use crate::engine::db::Db;
+use crate::engine::db::arangodb::ArangoDb;
 use crate::models::album::Album;
 use crate::models::inventory::Inventory;
 
@@ -79,12 +79,15 @@ impl Variant {
 
     /// Use this to connect the edge to its vertex —`vtx`— and generate a new
     /// `Inventory` document to be the destination with the variant.
-    pub fn create_inventory_variant(&mut self, vtx: &Album, count: u8, var: Variant) -> Result<Inventory, EngineError>
-    {
+    pub fn create_inventory_variant(
+        &mut self,
+        vtx: &Album,
+        count: u8,
+        var: Variant,
+    ) -> Result<Inventory, EngineError> {
         let mut inventory = Inventory::new();
         inventory.amount(count);
-        self.vertex(vtx.id())
-            .dest(inventory.id());
+        self.vertex(vtx.id()).dest(inventory.id());
         Ok(inventory)
     }
 }
@@ -108,7 +111,6 @@ enum Quality {
     NM,
     M,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Edition {

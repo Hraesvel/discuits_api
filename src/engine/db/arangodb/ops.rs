@@ -2,17 +2,37 @@ use std::collections::HashMap;
 
 use arangors::document::options::{InsertOptions, RemoveOptions, UpdateOptions};
 use arangors::document::response::DocumentResponse;
-use arangors::{AqlQuery, Document};
+use arangors::{AqlQuery, Cursor, Document};
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 
-use crate::engine::db::Db;
+use crate::engine::db::arangodb::ArangoDb;
 use crate::engine::{DbError, EngineError};
 use crate::io::{delete::EngineDelete, read::EngineGet, write::EngineWrite};
 use crate::models::{BoxedDoc, DocDetails, ReqModelTraits};
 
+pub async fn cursor_digest<T: DeserializeOwned>(
+    cursor: Cursor<T>,
+    engine: &ArangoDb,
+) -> Result<Vec<T>, EngineError> {
+    let mut col: Vec<T> = cursor.result;
+    if let Some(mut i) = cursor.id {
+        while let Ok(c) = engine.db().aql_next_batch(&i).await {
+            let mut r: Vec<T> = c.result;
+            col.append(&mut r);
+            if let Some(next_id) = c.id {
+                i = next_id;
+            } else {
+                break;
+            }
+        }
+    };
+
+    Ok(col)
+}
+
 #[async_trait]
-impl EngineGet for Db {
+impl EngineGet for ArangoDb {
     type E = EngineError;
 
     async fn get_all<T>(&self) -> Result<Vec<T>, Self::E>
@@ -53,7 +73,7 @@ impl EngineGet for Db {
 }
 
 #[async_trait]
-impl EngineWrite for Db {
+impl EngineWrite for ArangoDb {
     type E = EngineError;
 
     async fn insert<T: ReqModelTraits + BoxedDoc + 'static>(
@@ -80,7 +100,7 @@ impl EngineWrite for Db {
 }
 
 #[async_trait]
-impl EngineDelete for Db {
+impl EngineDelete for ArangoDb {
     type E = EngineError;
 
     async fn remove<T>(&self, id: &str) -> Result<T, Self::E>

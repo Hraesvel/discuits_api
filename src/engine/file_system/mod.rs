@@ -1,9 +1,8 @@
 #![allow(unused_variables, dead_code)]
 //! Todo : `FileSystem` engine will be placed on back burner till `Database` engine has been finished.
+use dashmap::DashMap;
 use std::borrow::Cow;
 use std::path::Path;
-
-use dashmap::DashMap;
 
 use crate::engine::EngineError;
 

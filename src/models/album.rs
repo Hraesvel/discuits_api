@@ -19,7 +19,6 @@ pub struct Album {
     description: Cow<'static, str>,
 }
 
-
 impl Album {
     /// Creates a new blank Album with a unique identifier for `_key`
     pub fn new() -> Self {
@@ -33,7 +32,8 @@ impl Album {
     }
 
     pub fn change_id<T>(&mut self, new_id: T) -> &mut Self
-        where T: Into<Cow<'static, str>>
+    where
+        T: Into<Cow<'static, str>>,
     {
         self._key = new_id.into();
         self
@@ -62,20 +62,22 @@ pub mod read {
     use arangors::{AqlQuery, Cursor};
     use async_trait::async_trait;
 
-    use crate::engine::db::{arangodb::aql_snippet, Db};
+    use crate::engine::db::arangodb::aql_snippet;
+    use crate::engine::db::arangodb::ops::cursor_digest;
+    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::EngineError;
     use crate::io::read::Get;
     use crate::models::{album::Album, DocDetails, ReqModelTraits};
 
     #[async_trait]
-    impl Get<Db> for Album {
+    impl Get<ArangoDb> for Album {
         type E = EngineError;
         type Document = Self;
 
         /// Gets all Albums from storage `Db`
-        async fn get_all(engine: &Db) -> Result<Vec<Self::Document>, Self::E>
-            where
-                Self: ReqModelTraits,
+        async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
+        where
+            Self: ReqModelTraits,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -84,24 +86,25 @@ pub mod read {
                 .build();
 
             let cursor: Cursor<Self> = engine.db().aql_query_batch(query).await?;
-            let mut col: Vec<Self> = cursor.result;
-            if let Some(mut i) = cursor.id {
-                while let Ok(c) = engine.db().aql_next_batch(&i).await {
-                    let mut r: Vec<Self> = c.result;
-                    col.append(&mut r);
-                    if let Some(next_id) = c.id {
-                        i = next_id;
-                    } else {
-                        break;
-                    }
-                }
-            };
+            let col: Vec<Self> = cursor_digest(cursor, engine).await?;
+            // let mut col: Vec<Self> = cursor.result;
+            // if let Some(mut i) = cursor.id {
+            //     while let Ok(c) = engine.db().aql_next_batch(&i).await {
+            //         let mut r: Vec<Self> = c.result;
+            //         col.append(&mut r);
+            //         if let Some(next_id) = c.id {
+            //             i = next_id;
+            //         } else {
+            //             break;
+            //         }
+            //     }
+            // };
 
             Ok(col)
         }
 
         /// Gets a single Albums from storage `Db`
-        async fn get(id: &str, engine: &Db) -> Result<Self::Document, Self::E> {
+        async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
             let col: Self = engine
                 .db()
                 .collection("album")
@@ -114,19 +117,19 @@ pub mod read {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use std::borrow::Cow;
 
     use tokio::time::{delay_for, Duration};
 
-    use crate::engine::db::{AuthType, Db};
+    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::test::common;
-    use crate::engine::EngineError;
+    use crate::engine::db::AuthType;
     use crate::engine::session::test::common_session_db;
+    use crate::engine::EngineError;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::Write;
+    use crate::io::write::EngineWrite;
     use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
@@ -160,6 +163,8 @@ mod test {
         let db = common().await?;
 
         delay_for(Duration::from_secs(2)).await;
+        // Two flavors of get all either from Db type or using the Model type
+        // and providing the Db
         let engine_read_trait = db.get_all::<Album>().await?;
         let implicit_get_from_db = Album::get_all(&db).await?;
 
@@ -183,5 +188,3 @@ mod test {
         Ok(())
     }
 }
-
-
