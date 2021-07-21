@@ -2,3 +2,7 @@
 pub mod delete;
 pub mod read;
 pub mod write;
+
+pub use write::*;
+pub use read::*;
+pub use delete::*;
