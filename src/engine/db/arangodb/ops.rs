@@ -45,24 +45,25 @@ impl EngineGet for ArangoDb {
         let query = AqlQuery::builder()
             .query(aql_snippet::GET_ALL)
             .bind_var("@collection", T::collection_name())
-            .batch_size(25)
+            .batch_size(5)
             .build();
 
         let cursor: Cursor<T> = self.db().aql_query_batch(query).await?;
-        let mut collection: Vec<T> = cursor.result;
+        let collection = cursor_digest(cursor, self).await?;
+        // let mut collection: Vec<T> = cursor.result;
 
-        /// Collecting via pagination.
-        if let Some(mut i) = cursor.id {
-            while let Ok(c) = self.db().aql_next_batch(&i).await {
-                let mut r: Vec<T> = c.result;
-                collection.append(&mut r);
-                if let Some(next_id) = c.id {
-                    i = next_id;
-                } else {
-                    break;
-                }
-            }
-        };
+        // /// Collecting via pagination.
+        // if let Some(mut i) = cursor.id {
+        //     while let Ok(c) = self.db().aql_next_batch(&i).await {
+        //         let mut r: Vec<T> = c.result;
+        //         collection.append(&mut r);
+        //         if let Some(next_id) = c.id {
+        //             i = next_id;
+        //         } else {
+        //             break;
+        //         }
+        //     }
+        // };
 
         Ok(collection)
     }

@@ -1,18 +1,29 @@
 use std::borrow::Cow;
+use std::fmt::Display;
 
-use arangors::client::reqwest::ReqwestClient;
 #[warn(missing_docs)]
 use arangors::{ClientError, Connection, Database};
+use arangors::client::reqwest::ReqwestClient;
 use serde::__private::Formatter;
 
+pub use arangodb::ArangoDb;
+#[cfg(feature = "mongodb")]
+pub use mongodb::MongoDb;
+#[cfg(feature = "pgsql")]
+pub use pgsql::PostgresSQL;
+
 use crate::engine::{DbError, EngineError};
+use crate::io::EngineWrite;
 use crate::models::ReqModelTraits;
 
 pub mod arangodb;
-
-pub use arangodb::ArangoDb;
+#[cfg(feature = "pgsql")]
+mod pgsql;
+#[cfg(feature = "mongodb")]
+mod mongodb;
 
 // Temporary host address - ArangoDB default
+// This will be replace in time with a config file.
 const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
@@ -28,12 +39,17 @@ impl<'a> Default for AuthType<'a> {
     }
 }
 
-pub struct Db<T>(T);
+#[derive(Debug)]
+pub struct Db<T: EngineWrite> {
+    db: T,
+}
 
-impl Db<ArangoDb> {
-    pub fn db(&self) -> &Database<ReqwestClient> {
-        &self.0.db
-    }
+pub trait DbBasics<'a>: std::fmt::Debug {
+    type Client: std::fmt::Debug;
+
+    fn db(&'a self) -> Self::Client;
+
+    fn db_info(&'a self);
 }
 
 /// Builder for `Db` (database) struct
@@ -90,16 +106,19 @@ impl<'a> DbBuilder<'a> {
 
 #[cfg(test)]
 pub(crate) mod test {
+    use std::sync::{Arc, Once};
+
+    use lazy_static::lazy;
     use tokio;
 
+    use crate::engine::db::*;
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::AuthType;
-    use crate::engine::db::*;
-    use crate::engine::session::test::common_session_db;
-    use crate::engine::session::Session;
     use crate::engine::EngineError;
+    use crate::engine::session::Session;
+    use crate::engine::session::test::common_session_db;
 
-    pub async fn common() -> Result<ArangoDb, EngineError> {
+    pub async fn common() -> Result<Db<ArangoDb>, EngineError> {
         let auth = AuthType::Basic {
             user: "discket",
             pass: "babyYoda",
@@ -110,7 +129,19 @@ pub(crate) mod test {
             .connect()
             .await?;
 
-        Ok(db)
+
+        Ok(Db { db })
+    }
+
+    #[tokio::test]
+    async fn test_db_dyn_trait() {
+        // let m = Db { db: MongoDb };
+        // m.db_info();
+        // let p = Db { db: PostgresSQL };
+        // p.db_info();
+        let a = common().await.expect("Fail to create ArangoDb connection");
+        a.db_info();
+        println!("ArangoDb name: {:?}", a.db().db.name());
     }
 
     #[tokio::test]

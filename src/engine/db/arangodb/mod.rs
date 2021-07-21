@@ -1,7 +1,7 @@
-use arangors::client::reqwest::ReqwestClient;
 use arangors::{ClientError, Connection, Database};
+use arangors::client::reqwest::ReqwestClient;
 
-use crate::engine::db::{DbBuilder, DEFAULT_HOST};
+use crate::engine::db::{Db, DbBasics, DbBuilder, DEFAULT_HOST};
 use crate::engine::EngineError;
 
 pub mod aql_snippet;
@@ -20,6 +20,10 @@ impl ArangoDb {
         let mut builder = DbBuilder::default();
         builder.host = DEFAULT_HOST;
         builder
+    }
+
+    pub fn db_info(&self) {
+        println!("ArangoDb database");
     }
 
     /// Check if a url to a server is still valid.
@@ -64,5 +68,17 @@ impl ArangoDb {
 
     pub fn db(&self) -> &Database<ReqwestClient> {
         &self.db
+    }
+}
+
+impl<'a> DbBasics<'a> for Db<ArangoDb> {
+    type Client = &'a ArangoDb;
+
+    fn db(&'a self) -> Self::Client {
+        &self.db
+    }
+
+    fn db_info(&'a self) {
+        self.db.db_info();
     }
 }
