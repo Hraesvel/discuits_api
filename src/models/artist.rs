@@ -71,8 +71,8 @@ pub mod read {
 
         /// Gets all artists from storage `Db`
         async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
-        where
-            Self: DocDetails,
+            where
+                Self: DocDetails,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -119,10 +119,10 @@ pub mod write {
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::EngineError;
     use crate::io::write::{EngineWrite, Write};
-    use crate::models::artist::Artist;
     use crate::models::{DocDetails, ReqModelTraits};
+    use crate::models::artist::Artist;
 
-    // #[async_trait]
+// #[async_trait]
     // impl Write<Artist> for Db
     //     where Artist : ReqModelTraits
     // {
@@ -146,13 +146,13 @@ pub mod write {
 mod test {
     use std::borrow::Cow;
 
+    use crate::engine::db::{AuthType, DbBasics};
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::test::common;
-    use crate::engine::db::AuthType;
-    use crate::engine::session::test::common_session_db;
     use crate::engine::EngineError;
+    use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::Write;
+    use crate::io::write::{EngineWrite};
     use crate::models::artist::Artist;
 
     type TestResult = Result<(), EngineError>;
@@ -163,7 +163,8 @@ mod test {
         let mut data = Artist::new();
         data.name = Cow::from("Disney");
 
-        let resp = db.insert(data).await;
+        let resp = db.db().insert(data).await;
+        // let resp = db.insert(data).await;
 
         assert!(resp.is_ok());
         Ok(())
@@ -176,8 +177,8 @@ mod test {
         let mut data = Artist::new();
         data.name = Cow::from("Disney");
 
-        db.insert(data.clone()).await?;
-        let resp = db.insert(data).await;
+        db.db().insert(data.clone()).await?;
+        let resp = db.db().insert(data).await;
         assert!(resp.is_err());
         Ok(())
     }
@@ -186,8 +187,10 @@ mod test {
     async fn test_get_all_artists() -> TestResult {
         let db = common().await?;
 
-        let db_artist = db.get_all::<Artist>().await?;
-        let artists = Artist::get_all(&db).await?;
+        dbg!(&db);
+
+        let db_artist = db.db().get_all::<Artist>().await?;
+        let artists = Artist::get_all(&db.db()).await?;
 
         dbg!(db_artist.len());
         println!("><><><><>><><>><><><><><>><");
@@ -209,7 +212,6 @@ mod test {
         // dbg!(&resp);
 
         assert!(resp.is_ok());
-
         Ok(())
     }
 }

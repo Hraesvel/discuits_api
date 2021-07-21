@@ -5,17 +5,17 @@ mod test_generics {
     use std::process::Output;
     use std::sync::RwLockReadGuard;
 
+    use serde_json::Value;
     use tokio::macros::support::Future;
 
     use discuits_api::engine::db::arangodb::ArangoDb;
-    use discuits_api::engine::session::Session;
     use discuits_api::engine::EngineError;
+    use discuits_api::engine::session::Session;
     use discuits_api::io::delete::{Delete, EngineDelete};
     use discuits_api::io::write::EngineWrite;
     use discuits_api::models::{album::*, artist::*, ReqModelTraits};
 
     use crate::initialisation::test::*;
-    use serde_json::Value;
 
     #[tokio::test]
     async fn insert_multiple_types() -> SimpleResult {

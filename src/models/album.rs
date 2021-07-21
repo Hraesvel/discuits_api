@@ -125,7 +125,7 @@ mod test {
 
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::test::common;
-    use crate::engine::db::AuthType;
+    use crate::engine::db::{AuthType, DbBasics};
     use crate::engine::session::test::common_session_db;
     use crate::engine::EngineError;
     use crate::io::read::{EngineGet, Get};
@@ -140,7 +140,7 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        let resp = db.insert(new_album).await;
+        let resp = db.db().insert(new_album).await;
         assert!(resp.is_ok());
         Ok(())
     }
@@ -152,8 +152,8 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        db.insert(new_album.clone()).await?;
-        let resp = db.insert(new_album).await;
+        db.db().insert(new_album.clone()).await?;
+        let resp = db.db().insert(new_album).await;
         assert!(resp.is_err());
         Ok(())
     }
@@ -165,8 +165,8 @@ mod test {
         delay_for(Duration::from_secs(2)).await;
         // Two flavors of get all either from Db type or using the Model type
         // and providing the Db
-        let engine_read_trait = db.get_all::<Album>().await?;
-        let implicit_get_from_db = Album::get_all(&db).await?;
+        let engine_read_trait = db.db().get_all::<Album>().await?;
+        let implicit_get_from_db = Album::get_all(db.db()).await?;
 
         assert_eq!(engine_read_trait.len(), implicit_get_from_db.len());
 

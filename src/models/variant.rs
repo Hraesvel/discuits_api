@@ -141,8 +141,10 @@ mod test {
 
     use crate::engine::db::test::common;
     use crate::engine::EngineError;
-    use crate::io::write::Write;
+    // use crate::io::write::Write;
     use crate::models::variant::Variant;
+    use crate::io::EngineWrite;
+    use crate::engine::db::DbBasics;
 
     type TestResult = Result<(), EngineError>;
 
@@ -153,7 +155,7 @@ mod test {
         v._from = Cow::from("album/7782da0a");
         v._to = Cow::from("inventory/1158719");
         v.details = Cow::from("Test Variant");
-        dbg!(db.insert(v).await);
+        dbg!(db.db().insert(v).await);
         Ok(())
     }
 }
