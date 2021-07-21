@@ -5,9 +5,13 @@ authors = ["Martin Smith <mcodesmith@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 
+[features]
+pgsql = []
+mongodb= []
 
 [build]
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
 
 [profile.release]
 lto = true
@@ -28,3 +32,4 @@ dashmap = "^3"
 tokio = { version = "0.2", features = ["full", "macros", "time"] }
 futures = "0.3.15"
 lazy_static = "1.4.0"
+discuits_api = {path=".", features = ["pgsql"]}
