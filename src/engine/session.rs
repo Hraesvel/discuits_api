@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use tokio::sync::{RwLock, RwLockReadGuard};
 
 use crate::engine::db::arangodb::ArangoDb;
+use crate::engine::db::Db;
 use crate::engine::EngineError;
 
 pub trait NewSession {}
@@ -24,9 +25,6 @@ impl<T> Session<T> {
         self.0.clone()
     }
 }
-
-#[async_trait]
-impl NewSession for ArangoDb {}
 
 #[cfg(test)]
 pub(crate) mod test {
