@@ -1,22 +1,19 @@
-use arangors::document::response::DocumentResponse;
-use async_trait::async_trait;
-
 use crate::models::{BoxedDoc, ReqModelTraits};
 
-#[async_trait]
+#[crate::async_trait]
 pub trait Write<T>
 where
-    T: ReqModelTraits,
+    T: ReqModelTraits + 'static,
 {
     type E;
     type Document;
 
     async fn insert(&self, doc: T) -> Result<(String, Box<dyn BoxedDoc>), Self::E>;
 
-    async fn update(&self) -> Result<(), Self::E>;
+    async fn update(&self, doc: T) -> Result<(), Self::E>;
 }
 
-#[async_trait]
+#[crate::async_trait]
 pub trait EngineWrite {
     type E;
 
@@ -28,4 +25,32 @@ pub trait EngineWrite {
 
     /// Method to updating a single document
     async fn update<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E>;
+
+    async fn insert_collection<T: ReqModelTraits + BoxedDoc + 'static>(
+        &self,
+        jobs: Vec<T>,
+    ) -> Result<Vec<String>, Self::E> {
+        let mut resp = Vec::new();
+        for job in jobs {
+            let r = self.insert(job).await?;
+            resp.push(r.0);
+        }
+        Ok(resp)
+    }
+}
+
+#[macro_export]
+macro_rules! insert_many {
+    ($db:expr, $($e:expr),*) => {{
+
+        let mut v: Vec<Result<Box<dyn BoxedDoc>, $crate::engine::EngineError>> = Vec::new();
+        $(
+            let r = $db.insert($e).await;
+            match r {
+                Ok(doc) => v.push(Ok(doc.1)),
+                Err(e) => v.push(Err(Box::new($crate::engine::DbError::FailedToCreate))),
+            }
+        )*
+        v
+    }};
 }

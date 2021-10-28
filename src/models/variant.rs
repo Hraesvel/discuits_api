@@ -1,17 +1,19 @@
 use std::borrow::Cow;
 
-use arangors::document::options::InsertOptions;
 use model_write_derive::*;
 use uuid::Uuid;
 
-use crate::engine::db::arangodb::ArangoDb;
 use crate::models::album::Album;
 use crate::models::inventory::Inventory;
 
 #[derive(Debug, Clone, ModelTrait, WriteToArango, Serialize, Deserialize)]
 struct Variant {
-    _id: Cow<'static, str>,
-    _key: Cow<'static, str>,
+    /// ArangonDb _id
+    #[serde(rename(deserialize = "_id", serialize = "_id"))]
+    id: Cow<'static, str>,
+    /// ArangonDb _key
+    #[serde(rename(deserialize = "_key", serialize = "_key"))]
+    key: Cow<'static, str>,
     pub _from: Cow<'static, str>,
     pub _to: Cow<'static, str>,
     #[serde(default)]
@@ -26,8 +28,8 @@ impl Default for Variant {
         let uid = Uuid::new_v4().to_string()[0..8].to_string();
 
         Variant {
-            _id: Default::default(),
-            _key: Cow::from(uid),
+            id: Default::default(),
+            key: Cow::from(uid),
             _from: Default::default(),
             _to: Default::default(),
             details: Default::default(),
@@ -42,7 +44,7 @@ impl Variant {
     pub fn new() -> Self {
         let uid = Uuid::new_v4().to_string()[0..8].to_string();
         Variant {
-            _key: Cow::from(uid),
+            key: Cow::from(uid),
             ..Variant::default()
         }
     }
@@ -83,7 +85,7 @@ impl Variant {
         &mut self,
         vtx: &Album,
         count: u8,
-        var: Variant,
+        _var: Variant,
     ) -> Result<Inventory, EngineError> {
         let mut inventory = Inventory::new();
         inventory.amount(count);
@@ -107,7 +109,7 @@ enum Quality {
     G,
     GP,
     VG,
-    VGP,
+    Vgp,
     NM,
     M,
 }
@@ -142,9 +144,9 @@ mod test {
     use crate::engine::db::test::common;
     use crate::engine::EngineError;
     // use crate::io::write::Write;
-    use crate::models::variant::Variant;
+
     use crate::io::EngineWrite;
-    use crate::engine::db::DbBasics;
+    use crate::models::variant::Variant;
 
     type TestResult = Result<(), EngineError>;
 
@@ -155,7 +157,7 @@ mod test {
         v._from = Cow::from("album/7782da0a");
         v._to = Cow::from("inventory/1158719");
         v.details = Cow::from("Test Variant");
-        dbg!(db.db().insert(v).await);
+        dbg!(db.insert(v).await);
         Ok(())
     }
 }

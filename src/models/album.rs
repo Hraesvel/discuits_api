@@ -1,14 +1,16 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 
 use model_write_derive::*;
 
 /// Album data type
 #[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
 pub struct Album {
-    /// field that reflects ArangoDB's `_id`
-    _id: Cow<'static, str>,
-    /// field that reflects ArangoDB's `_key`
-    _key: Cow<'static, str>,
+    /// ArangonDb _id
+    #[serde(rename(deserialize = "_id", serialize = "_id"))]
+    id: Cow<'static, str>,
+    /// ArangonDb _key
+    #[serde(rename(deserialize = "_key", serialize = "_key"))]
+    key: Cow<'static, str>,
     /// field for storing an barcode of a album
     barcode: Cow<'static, str>,
     /// field for storing an catalog number of a album
@@ -25,17 +27,20 @@ impl Album {
         use uuid::Uuid;
 
         let uid = Uuid::new_v4().to_string()[0..8].to_string();
+        let id = format!("{}/{}", "album", uid);
         Album {
-            _key: Cow::from(uid),
+            id: Cow::from(id),
+            key: Cow::from(uid),
             ..Album::default()
         }
     }
 
     pub fn change_id<T>(&mut self, new_id: T) -> &mut Self
-    where
-        T: Into<Cow<'static, str>>,
+        where
+            T: Into<Cow<'static, str>>,
     {
-        self._key = new_id.into();
+        self.key = new_id.into();
+        self.id = format!("album/{}", self.key).into();
         self
     }
 
@@ -47,7 +52,7 @@ impl Album {
     }
 
     pub fn name(&mut self, name: &'static str) -> &mut Self {
-        self.name = Cow::from(name);
+        self.name = Cow::from(name.trim().to_ascii_lowercase());
         self
     }
 
@@ -58,26 +63,24 @@ impl Album {
 }
 
 pub mod read {
-    //! module for handling reads for album
+    //! module adds static methods to
+    //! handle simple reading tasks
     use arangors::{AqlQuery, Cursor};
-    use async_trait::async_trait;
 
-    use crate::engine::db::arangodb::aql_snippet;
-    use crate::engine::db::arangodb::ops::cursor_digest;
-    use crate::engine::db::arangodb::ArangoDb;
+    use crate::engine::db::arangodb::preludes::*;
     use crate::engine::EngineError;
     use crate::io::read::Get;
     use crate::models::{album::Album, DocDetails, ReqModelTraits};
 
-    #[async_trait]
+    #[crate::async_trait]
     impl Get<ArangoDb> for Album {
         type E = EngineError;
         type Document = Self;
 
         /// Gets all Albums from storage `Db`
         async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
-        where
-            Self: ReqModelTraits,
+            where
+                Self: ReqModelTraits,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -87,18 +90,6 @@ pub mod read {
 
             let cursor: Cursor<Self> = engine.db().aql_query_batch(query).await?;
             let col: Vec<Self> = cursor_digest(cursor, engine).await?;
-            // let mut col: Vec<Self> = cursor.result;
-            // if let Some(mut i) = cursor.id {
-            //     while let Ok(c) = engine.db().aql_next_batch(&i).await {
-            //         let mut r: Vec<Self> = c.result;
-            //         col.append(&mut r);
-            //         if let Some(next_id) = c.id {
-            //             i = next_id;
-            //         } else {
-            //             break;
-            //         }
-            //     }
-            // };
 
             Ok(col)
         }
@@ -114,6 +105,14 @@ pub mod read {
                 .document;
             Ok(col)
         }
+
+        async fn find<'a>(
+            _with: &str,
+            _field: &str,
+            _engine: &ArangoDb,
+        ) -> Result<Self::Document, Self::E> {
+            todo!()
+        }
     }
 }
 
@@ -121,15 +120,14 @@ pub mod read {
 mod test {
     use std::borrow::Cow;
 
-    use tokio::time::{delay_for, Duration};
+    use tokio::io::AsyncReadExt;
 
-    use crate::engine::db::arangodb::ArangoDb;
+    use crate::engine::db::DbBasics;
     use crate::engine::db::test::common;
-    use crate::engine::db::{AuthType, DbBasics};
-    use crate::engine::session::test::common_session_db;
     use crate::engine::EngineError;
+    use crate::engine::session::test::common_session_db;
     use crate::io::read::{EngineGet, Get};
-    use crate::io::write::EngineWrite;
+    use crate::io::write::Write;
     use crate::models::album::Album;
 
     type TestResult = Result<(), EngineError>;
@@ -140,7 +138,7 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        let resp = db.db().insert(new_album).await;
+        let resp = db.insert(new_album).await;
         assert!(resp.is_ok());
         Ok(())
     }
@@ -152,8 +150,8 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        db.db().insert(new_album.clone()).await?;
-        let resp = db.db().insert(new_album).await;
+        db.insert(new_album.clone()).await?;
+        let resp = db.insert(new_album).await;
         assert!(resp.is_err());
         Ok(())
     }
@@ -162,11 +160,11 @@ mod test {
     async fn test_get_all_albums() -> TestResult {
         let db = common().await?;
 
-        delay_for(Duration::from_secs(2)).await;
-        // Two flavors of get all either from Db type or using the Model type
-        // and providing the Db
-        let engine_read_trait = db.db().get_all::<Album>().await?;
-        let implicit_get_from_db = Album::get_all(db.db()).await?;
+        // delay_for(Duration::from_secs(2)).await;
+        // Two flavors of get all either from Db type
+        // or using the Model static method
+        let engine_read_trait = db.get_all::<Album>().await?;
+        let implicit_get_from_db = Album::get_all(&db).await?;
 
         assert_eq!(engine_read_trait.len(), implicit_get_from_db.len());
 
@@ -175,8 +173,12 @@ mod test {
 
     #[tokio::test]
     async fn test_session_insert_album() -> TestResult {
-        let s = common_session_db().await?.clone();
-        let s_read = s.read().await;
+        let s = common_session_db()
+            .await?.clone();
+        let s_read = s
+            .db()
+            .read()
+            .await;
 
         let mut a = Album::new();
         a.name = Cow::from("with session");

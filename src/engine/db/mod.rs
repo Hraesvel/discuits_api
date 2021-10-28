@@ -1,10 +1,8 @@
-use std::borrow::Cow;
-use std::fmt::Display;
+use std::marker::PhantomData;
 
-#[warn(missing_docs)]
-use arangors::{ClientError, Connection, Database};
-use arangors::client::reqwest::ReqwestClient;
-use serde::__private::Formatter;
+use arangors::Connection;
+use tokio::sync::RwLock;
+// use tokio::io::{AsyncReadExt};
 
 pub use arangodb::ArangoDb;
 #[cfg(feature = "mongodb")]
@@ -13,18 +11,17 @@ pub use mongodb::MongoDb;
 pub use pgsql::PostgresSQL;
 
 use crate::engine::{DbError, EngineError};
-use crate::io::EngineWrite;
-use crate::models::ReqModelTraits;
+
 
 pub mod arangodb;
-#[cfg(feature = "pgsql")]
-mod pgsql;
 #[cfg(feature = "mongodb")]
 mod mongodb;
+#[cfg(feature = "pgsql")]
+mod pgsql;
 
 // Temporary host address - ArangoDB default
 // This will be replace in time with a config file.
-const DEFAULT_HOST: &'static str = "http://127.0.0.1:8529";
+const DEFAULT_HOST: &str = "http://127.0.0.1:8529";
 
 #[derive(Debug)]
 pub enum AuthType<'a> {
@@ -39,28 +36,48 @@ impl<'a> Default for AuthType<'a> {
     }
 }
 
-#[derive(Debug)]
-pub struct Db<T: EngineWrite> {
-    db: T,
+#[derive(Debug, Default)]
+pub struct Db<T: ?Sized> {
+    db: RwLock<T>,
 }
 
+impl<T: ?Sized> Db<T> {}
+
+impl<T> Db<T> {
+    pub fn new(db: T) -> Self {
+        Self { db: RwLock::new(db) }
+    }
+}
+
+#[crate::async_trait]
 pub trait DbBasics<'a>: std::fmt::Debug {
     type Client: std::fmt::Debug;
 
     fn db(&'a self) -> Self::Client;
 
-    fn db_info(&'a self);
+    async fn db_info(&'a self);
 }
 
 /// Builder for `Db` (database) struct
-#[derive(Debug, Default)]
-pub struct DbBuilder<'a> {
+#[derive(Debug)]
+pub struct DbBuilder<'a, T> {
     auth_type: AuthType<'a>,
     host: &'a str,
     db_name: &'a str,
+    phantom: PhantomData<T>,
 }
 
-impl<'a> DbBuilder<'a> {
+
+impl<'a> DbBuilder<'a, ArangoDb> {
+    pub fn new() -> Self {
+        Self {
+            auth_type: AuthType::NoAuth,
+            host: DEFAULT_HOST,
+            db_name: "",
+            phantom: PhantomData,
+        }
+    }
+
     /// Method to altering the host address from `DEFAULT_HOST`
     pub fn host(&mut self, host: &'a str) -> &mut Self {
         self.host = host;
@@ -106,31 +123,26 @@ impl<'a> DbBuilder<'a> {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use std::sync::{Arc, Once};
-
-    use lazy_static::lazy;
     use tokio;
 
     use crate::engine::db::*;
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::AuthType;
     use crate::engine::EngineError;
-    use crate::engine::session::Session;
     use crate::engine::session::test::common_session_db;
 
-    pub async fn common() -> Result<Db<ArangoDb>, EngineError> {
+    pub async fn common() -> Result<ArangoDb, EngineError> {
         let auth = AuthType::Basic {
-            user: "discket",
-            pass: "babyYoda",
+            user: "discket_test",
+            pass: "",
         };
-        let db = ArangoDb::new()
+        let db = ArangoDb::builder()
             .auth_type(auth)
-            .db_name("discket_dev")
+            .db_name("discket_test")
             .connect()
             .await?;
 
-
-        Ok(Db { db })
+        Ok(db)
     }
 
     #[tokio::test]
@@ -141,27 +153,33 @@ pub(crate) mod test {
         // p.db_info();
         let a = common().await.expect("Fail to create ArangoDb connection");
         a.db_info();
-        println!("ArangoDb name: {:?}", a.db().db.name());
+        println!("ArangoDb name: {:?}", a.db().name());
     }
 
     #[tokio::test]
     async fn test_connection() -> Result<(), EngineError> {
         let db = common_session_db().await?.clone();
         {
-            let d = db.read().await;
+            let d = db.get_ref().db().read().await;
             assert!(d.validate_connection().await.is_ok());
             assert!(d.validate_server().await.is_ok());
         }
+        {
+            let d = db.get_ref().db().read().await;
+            assert!(d.validate_connection().await.is_ok());
+            assert!(d.validate_server().await.is_ok());
+        }
+
 
         Ok(())
     }
 
     #[tokio::test]
     async fn test_reconnect_jwt() -> Result<(), EngineError> {
-        let db_session = common_session_db().await?;
+        let db_session = common_session_db().await?.into_inner();
         let db = db_session.clone();
         {
-            let mut new_db = db.write().await;
+            let mut new_db = db.db.write().await;
 
             assert!(new_db.reconnect_jwt("discket", "babyYoda").await.is_ok());
 
@@ -182,16 +200,16 @@ pub(crate) mod test {
         let db = db_session.clone();
         let db2 = db_session.clone();
         {
-            let d = db.read().await;
+            let d = db.db.read().await;
             assert!(d.validate_connection().await.is_ok());
             assert!(d.validate_server().await.is_ok());
         }
         // dbg!(db.read().await.db.name());
 
         {
-            let mut new_db = db.write().await;
+            let mut new_db = db.db().write().await;
 
-            *new_db = ArangoDb::new()
+            *new_db = ArangoDb::builder()
                 .db_name("discket_test")
                 .auth_type(AuthType::Jwt {
                     user: "discket_test",
@@ -205,8 +223,8 @@ pub(crate) mod test {
             assert!(new_db.validate_db().await.is_ok());
         }
 
-        dbg!(db.read().await.db.name());
-        dbg!(db2.read().await.db.name());
+        dbg!(db.db().read().await.db.name());
+        dbg!(db2.db().read().await.db.name());
 
         Ok(())
     }

@@ -1,15 +1,17 @@
-use arangors::document::options::InsertOptions;
-use async_trait::async_trait;
-
-use crate::engine::db::arangodb::aql_snippet;
-use crate::engine::db::arangodb::ArangoDb;
-use crate::engine::EngineError;
-use crate::io::read::EngineGet;
-
 pub mod album;
 pub mod artist;
 pub mod inventory;
 pub mod variant;
+pub mod fake;
+
+
+#[cfg(feature="arangodb")]
+pub mod edge;
+
+
+pub fn timestamp() -> u64 {
+ 0
+}
 
 pub trait ReqModelTraits:
     serde::de::DeserializeOwned + serde::ser::Serialize + DocDetails + Sync + Send + Clone

@@ -1,11 +1,17 @@
-use arangors::{ClientError, Connection, Database};
-use arangors::client::reqwest::ReqwestClient;
+
+use arangors::{AqlQuery, ClientError, Connection, Database};
+use arangors::uclient::reqwest::ReqwestClient;
+use serde::Serialize;
+use tokio::sync::RwLock;
 
 use crate::engine::db::{Db, DbBasics, DbBuilder, DEFAULT_HOST};
+use crate::engine::db::arangodb::aql_snippet::*;
 use crate::engine::EngineError;
 
 pub mod aql_snippet;
 pub mod ops;
+pub mod preludes;
+
 
 #[derive(Debug)]
 pub struct ArangoDb {
@@ -13,11 +19,12 @@ pub struct ArangoDb {
     pub(crate) db: Database<ReqwestClient>,
 }
 
+// Constructor
 impl ArangoDb {
     /// Creates a `DbBuilder` with a default host to `http://127.0.0.1:8529`
     /// host can be altered using the method `DbBuilder::host(&mut self, host: &'static str)`.
-    pub fn new<'a>() -> DbBuilder<'a> {
-        let mut builder = DbBuilder::default();
+    pub fn builder<'a>() -> DbBuilder<'a, Self> {
+        let mut builder: DbBuilder<ArangoDb> = DbBuilder::new();
         builder.host = DEFAULT_HOST;
         builder
     }
@@ -42,10 +49,11 @@ impl ArangoDb {
     }
 
     pub async fn validate_db(&self) -> Result<(), EngineError> {
+        let info = self.db.url();
         let db = format!(
             "http://{}:{}/_db/{}/_api/simple/any",
-            self.db.url().host().unwrap(),
-            self.db.url().port().unwrap(),
+            info.host().unwrap(),
+            info.port().unwrap(),
             self.db.name()
         );
         self.conn.session().client.put(&db).send().await?;
@@ -71,14 +79,57 @@ impl ArangoDb {
     }
 }
 
+// methods
+impl ArangoDb {
+    pub fn filter<'a>(value: &'a str, field: &'a str, collection: &'a str) -> AqlQuery<'a> {
+        AqlQuery::builder()
+            .query(FILTER)
+            .bind_var("field", field)
+            .bind_var("value", value)
+            .bind_var("@collection", collection)
+            .build()
+    }
+
+    pub fn upsert<T: Clone + Serialize + 'static>(
+        document: T,
+        collection: &'static str,
+    ) -> AqlQuery<'static> {
+        AqlQuery::builder()
+            .query(UPSERT_EDGE)
+            .bind_var("@collection", collection)
+            .bind_var("doc", serde_json::to_value(&document).unwrap())
+            .build()
+    }
+
+    pub fn insert<T: Clone + Serialize + 'static>(
+        document: T,
+        collection: &'static str,
+    ) -> AqlQuery<'static> {
+        AqlQuery::builder()
+            .query(INSERT)
+            .bind_var("@collection", collection)
+            .bind_var("doc", serde_json::to_value(&document).unwrap())
+            .build()
+    }
+
+    pub fn remove<'a>(key: &'a str, collection: &'a str) -> AqlQuery<'static> {
+        AqlQuery::builder()
+            .query(REMOVE)
+            .bind_var("@collection", collection)
+            .bind_var("key", key)
+            .build()
+    }
+}
+
+#[crate::async_trait]
 impl<'a> DbBasics<'a> for Db<ArangoDb> {
-    type Client = &'a ArangoDb;
+    type Client = &'a RwLock<ArangoDb>;
 
     fn db(&'a self) -> Self::Client {
         &self.db
     }
 
-    fn db_info(&'a self) {
-        self.db.db_info();
+    async fn db_info(&'a self)   {
+        self.db.read().await.db_info()
     }
 }

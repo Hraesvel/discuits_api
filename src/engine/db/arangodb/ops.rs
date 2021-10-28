@@ -1,16 +1,14 @@
-use std::collections::HashMap;
+use arangors::document::options::UpdateOptions;
+use arangors::Cursor;
 
-use arangors::document::options::{InsertOptions, RemoveOptions, UpdateOptions};
-use arangors::document::response::DocumentResponse;
-use arangors::{AqlQuery, Cursor, Document};
-use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 
 use crate::engine::db::arangodb::ArangoDb;
 use crate::engine::{DbError, EngineError};
 use crate::io::{delete::EngineDelete, read::EngineGet, write::EngineWrite};
-use crate::models::{BoxedDoc, DocDetails, ReqModelTraits};
+use crate::models::{BoxedDoc, ReqModelTraits};
 
+/// handles pagination
 pub async fn cursor_digest<T: DeserializeOwned>(
     cursor: Cursor<T>,
     engine: &ArangoDb,
@@ -31,7 +29,7 @@ pub async fn cursor_digest<T: DeserializeOwned>(
     Ok(col)
 }
 
-#[async_trait]
+#[crate::async_trait]
 impl EngineGet for ArangoDb {
     type E = EngineError;
 
@@ -50,30 +48,38 @@ impl EngineGet for ArangoDb {
 
         let cursor: Cursor<T> = self.db().aql_query_batch(query).await?;
         let collection = cursor_digest(cursor, self).await?;
-        // let mut collection: Vec<T> = cursor.result;
-
-        // /// Collecting via pagination.
-        // if let Some(mut i) = cursor.id {
-        //     while let Ok(c) = self.db().aql_next_batch(&i).await {
-        //         let mut r: Vec<T> = c.result;
-        //         collection.append(&mut r);
-        //         if let Some(next_id) = c.id {
-        //             i = next_id;
-        //         } else {
-        //             break;
-        //         }
-        //     }
-        // };
 
         Ok(collection)
     }
 
-    async fn get<T>(&self, id: &str) -> Result<T, Self::E> {
-        unimplemented!()
+    async fn get<T>(&self, _id: &str) -> Result<T, Self::E>
+    where
+        T: ReqModelTraits,
+    {
+        let col: T = self
+            .db()
+            .collection(T::collection_name())
+            .await?
+            .document(_id)
+            .await?
+            .document;
+        Ok(col)
+    }
+
+    async fn find<T: ReqModelTraits>(&self, value: &str, field: &str) -> Result<T, Self::E> {
+        let filter = value.trim().to_ascii_lowercase();
+        let resp: Vec<T> = self
+            .db()
+            .aql_query(ArangoDb::filter(&filter, field, T::collection_name()))
+            .await?;
+        if resp.is_empty() {
+            return Err(Box::new(DbError::ItemNotFound));
+        }
+        Ok(resp[0].clone())
     }
 }
 
-#[async_trait]
+#[crate::async_trait]
 impl EngineWrite for ArangoDb {
     type E = EngineError;
 
@@ -81,14 +87,16 @@ impl EngineWrite for ArangoDb {
         &self,
         doc: T,
     ) -> Result<(String, Box<dyn BoxedDoc>), Self::E> {
-        let io = InsertOptions::builder().overwrite(false).build();
-        let _col = self
-            .db()
-            .collection(T::collection_name())
-            .await?
-            .create_document::<T>(doc.clone(), io)
+        let resp: Vec<T> = self
+            .db
+            .aql_query(ArangoDb::insert(doc.clone(), T::collection_name()))
             .await?;
-        Ok((doc.id(), Box::new(doc)))
+        if resp.is_empty() {
+            return Err(Box::new(DbError::FailedToCreate));
+        }
+        let new_doc = resp[0].clone();
+
+        Ok((new_doc.id(), Box::new(new_doc)))
     }
 
     async fn update<T: ReqModelTraits>(&self, doc: T) -> Result<(), Self::E> {
@@ -100,7 +108,7 @@ impl EngineWrite for ArangoDb {
     }
 }
 
-#[async_trait]
+#[crate::async_trait]
 impl EngineDelete for ArangoDb {
     type E = EngineError;
 
@@ -109,14 +117,11 @@ impl EngineDelete for ArangoDb {
         T: DeserializeOwned + Send + Sync,
     {
         let parse = id.split('/').collect::<Vec<&str>>();
-        let query = format!(
-            r#"REMOVE '{key}' in '{id}'
-            let removed = OLD
-            RETURN removed"#,
-            id = parse[0],
-            key = parse[1]
-        );
-        let value: Vec<T> = self.db.aql_str(&query).await?;
-        value.into_iter().nth(0).ok_or(DbError::ParseFail.into())
+        let aql = ArangoDb::remove(parse[1], parse[0]);
+        let mut value: Vec<T> = self.db.aql_query(aql).await?;
+        if value.is_empty() {
+            return Err(DbError::ItemNotFound.into());
+        }
+        Ok(value.swap_remove(0))
     }
 }

@@ -1,40 +1,63 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use tokio::sync::{RwLock, RwLockReadGuard};
 
-use crate::engine::db::arangodb::ArangoDb;
-use crate::engine::db::Db;
-use crate::engine::EngineError;
+use crate::engine::db::{Db};
+
+
 
 pub trait NewSession {}
 
-pub struct Session<T>(Arc<RwLock<T>>);
+#[derive(Debug, Default)]
+pub struct Session<T: ?Sized>(Arc<T>);
 
-// #[async_trait]
-// pub trait Engine {
-//     async fn insert<T: ReqiredTraits>(&self, doc: T) -> Result<(), EngineError>;
-// }
+impl<T> Session<Db<T>> {
+    pub fn new(t: T) -> Session<Db<T>> {
+    Session(Arc::new(Db::new(t)))
+    }
+}
 
-impl<T> Session<T> {
-    pub fn from(t: T) -> Result<Session<T>, EngineError> {
-        Ok(Session(Arc::new(RwLock::new(t))))
+impl<T: ?Sized> Session<T> {
+    /// Get reference to inner app Session.
+    pub fn get_ref(&self) -> &T {
+        self.0.as_ref()
     }
 
-    pub fn clone(&self) -> Arc<RwLock<T>> {
-        self.0.clone()
+    /// Convert to the internal Arc<T>
+    pub fn into_inner(self) -> Arc<T> {
+        self.0
+    }
+}
+
+impl<T: ?Sized> Deref for Session<T> {
+    type Target = Arc<T>;
+
+    fn deref(&self) -> &Arc<T> {
+        &self.0
+    }
+}
+
+impl<T: ?Sized> Clone for Session<T> {
+    fn clone(&self) -> Session<T> {
+        Session(self.0.clone())
+    }
+}
+
+impl<T: ?Sized> From<Arc<T>> for Session<T> {
+    fn from(arc: Arc<T>) -> Self {
+        Session(arc)
     }
 }
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::engine::db::{AuthType, Db};
     use crate::engine::db::arangodb::ArangoDb;
-    use crate::engine::db::AuthType;
-    use crate::engine::session::Session;
     use crate::engine::EngineError;
+    use crate::engine::session::Session;
 
-    pub async fn common_session_db() -> Result<Session<ArangoDb>, EngineError> {
-        let db = ArangoDb::new()
+    pub async fn common_session_db() -> Result<Session<Db<ArangoDb>>, EngineError> {
+        let db = ArangoDb::builder()
             .db_name("discket_dev")
             .auth_type(AuthType::Jwt {
                 user: "discket",
@@ -42,7 +65,7 @@ pub(crate) mod test {
             })
             .connect()
             .await?;
-        let session: Session<ArangoDb> = Session::from(db)?;
+        let session: Session<Db<ArangoDb>> = Session::new(db);
 
         Ok(session)
     }

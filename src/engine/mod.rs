@@ -1,11 +1,11 @@
 use std::fmt::Formatter;
 
 pub mod db;
-pub mod file_system;
 pub mod session;
 
 pub type EngineError = Box<dyn std::error::Error + Sync + Send>;
 
+//TODO: Rework error handling
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum DbError {
@@ -13,6 +13,8 @@ pub enum DbError {
     BlankDatabaseName,
     InvalidIdentification,
     ParseFail,
+    ItemNotFound,
+    FailedToCreate,
 }
 
 impl std::fmt::Display for DbError {
@@ -32,6 +34,12 @@ impl std::fmt::Display for DbError {
             DbError::ParseFail => {
                 write!(f, "{:?}", self)
             }
+            DbError::ItemNotFound => {
+                write!(f, "Could not find item in the database.")
+            }
+            DbError::FailedToCreate => {
+                write!(f, "Failed to create new item")
+            }
         }
     }
 }
@@ -40,8 +48,6 @@ impl std::error::Error for DbError {}
 
 #[cfg(test)]
 mod test {
-    use std::error;
-    use std::fmt::Display;
 
     use crate::engine::{DbError, EngineError};
 

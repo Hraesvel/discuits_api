@@ -2,24 +2,18 @@ pub mod initialisation;
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use tokio::io::AsyncReadExt;
-    use tokio::sync::{RwLock, RwLockReadGuard};
-
-    use discuits_api::engine::db::arangodb::ArangoDb;
-    use discuits_api::engine::session::Session;
+    use discuits_api::engine::db::DbBasics;
     use discuits_api::io::read::EngineGet;
     use discuits_api::models::{album::*, artist::*};
 
     use crate::initialisation::test::*;
-    use crate::test::SESS;
 
     #[tokio::test]
     async fn read_multiple_types() -> SimpleResult {
         let s = with_arangodb().await?;
 
-        let reader = s.read().await;
+        let reader = s.get_ref().db().read().await;
 
         let boop = reader.get_all::<Album>().await?;
         let bop = reader.get_all::<Artist>().await?;

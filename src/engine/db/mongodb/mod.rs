@@ -17,7 +17,10 @@ impl MongoDb {
 impl EngineWrite for MongoDb {
     type E = ();
 
-    async fn insert<T: ReqModelTraits + BoxedDoc + 'static>(&self, doc: T) -> Result<(String, Box<dyn BoxedDoc>), Self::E> {
+    async fn insert<T: ReqModelTraits + BoxedDoc + 'static>(
+        &self,
+        doc: T,
+    ) -> Result<(String, Box<dyn BoxedDoc>), Self::E> {
         todo!()
     }
 
@@ -25,7 +28,6 @@ impl EngineWrite for MongoDb {
         todo!()
     }
 }
-
 
 #[cfg(feature = "mongodb")]
 impl<'a> DbBasics<'a> for Db<MongoDb> {

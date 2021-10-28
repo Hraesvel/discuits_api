@@ -2,67 +2,54 @@ pub mod initialisation;
 
 #[cfg(test)]
 mod test_generics {
-    use std::process::Output;
-    use std::sync::RwLockReadGuard;
-
-    use serde_json::Value;
-    use tokio::macros::support::Future;
-
-    use discuits_api::engine::db::arangodb::ArangoDb;
-    use discuits_api::engine::EngineError;
-    use discuits_api::engine::session::Session;
-    use discuits_api::io::delete::{Delete, EngineDelete};
-    use discuits_api::io::write::EngineWrite;
-    use discuits_api::models::{album::*, artist::*, ReqModelTraits};
+    use discuits_api::{insert_many, one_to_many};
+    use discuits_api::engine::db::DbBasics;
+    use discuits_api::io::{Write, read::*};
+    use discuits_api::models::{album::*, artist::*, DocDetails, edge::*};
+    use discuits_api::models::BoxedDoc;
 
     use crate::initialisation::test::*;
 
     #[tokio::test]
     async fn insert_multiple_types() -> SimpleResult {
         let session = with_arangodb().await?;
-        let db = session.read().await;
+        let db = session.get_ref().db().read().await;
 
         let mut album = Album::new();
-        let mut artist = Artist::new();
-        album
-            .name("album test")
-            .description("insert made by test")
-            .change_id("12345");
+        let _artist = Artist::new();
+        album.name("album test").description("insert made by test");
+        // .change_id("12345");
 
         let mut artist = Artist::new();
-        artist.name("artist test").change_id("12345");
+        artist.name("artist test");
+        // .change_id("12345");
 
-        // let a = db.insert(album);
-        // let b = db.insert(artist);
-        let mut v = vec![];
+        let resp = insert_many!(db, album, artist);
+        dbg!(resp);
+        Ok(())
+    }
 
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
+    #[tokio::test]
+    async fn insert_artist_album_with_edge() -> SimpleResult {
+        let session = with_arangodb().await?;
+        let db = session.get_ref().db().read().await;
 
-        // tokio::join!(v);
-        let resp = futures::future::join_all(v).await;
-        let mut all_ids = used_ids.lock().await;
-        // return Ok(());
-        let mut ids = resp
-            .into_iter()
-            .filter(|x| x.is_ok())
-            .map(|x| x.unwrap().0)
-            .collect::<Vec<String>>();
+        let mut album = Album::new();
+        album.name("owl house");
+        let product = db.insert(album).await?;
 
-        let a = ids.swap_remove(0);
+        if let Ok(art) = db.find::<Artist>("Dana Terrace", "name").await {
 
-        let remove_album = db.remove::<Album>(&a).await?;
-        dbg!(remove_album);
-
-        for id in ids {
-            let _ = db.remove::<Value>(&id).await?;
-        }
+            let resp = one_to_many!(db, "artist_to", art.id(), [product.0]);
+            dbg!(&resp);
+            assert!(!resp.iter().any(|r| matches!(r, Err(_))))
+        } else {
+            let mut artist = Artist::new();
+            artist.name("Dana Terrace");
+            let art = db.insert(artist).await?;
+            let _e = Edge::link_one_to_many(&db, "artist_to", art.0, vec!(product.0)).await?;
+            // let edge = Edge::new("artist_to", art.0, product.0);
+        };
 
         Ok(())
     }
@@ -70,10 +57,9 @@ mod test_generics {
 
 #[cfg(test)]
 mod test_mono {
-    use std::sync::RwLockReadGuard;
+    use futures::future::join_all;
+    use discuits_api::engine::db::DbBasics;
 
-    use discuits_api::engine::db::arangodb::ArangoDb;
-    use discuits_api::engine::session::Session;
     use discuits_api::io::write::Write;
     use discuits_api::models::{album::*, artist::*};
 
@@ -82,10 +68,10 @@ mod test_mono {
     #[tokio::test]
     async fn insert_multiple_types() -> SimpleResult {
         let session = with_arangodb().await?;
-        let db = session.read().await;
+        let db = session.get_ref().db().read().await;
 
         let mut album = Album::new();
-        let mut artist = Artist::new();
+        let _artist = Artist::new();
         album
             .name("album test")
             .description("insert made by test")
@@ -94,26 +80,10 @@ mod test_mono {
         let mut artist = Artist::new();
         artist.name("artist test").gen_id();
 
-        let mut v = vec![];
+        let v = vec![db.insert(artist)];
 
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-        v.push(db.insert(album.clone().gen_id().to_owned()));
-        v.push(db.insert(artist.clone().gen_id().to_owned()));
-
-        let r = futures::future::join_all(v).await;
+        let r = join_all(v).await;
         dbg!(r);
-        // let mut col_ids  = r.into_iter()
-        //     .filter(|x| x.is_ok())
-        //     .map(|x| x.unwrap())
-        //     .collect::<Vec<_>>();
-        // let mut ids = used_ids.lock().await;
-
-        // dbg!(&col_ids);
 
         Ok(())
     }
