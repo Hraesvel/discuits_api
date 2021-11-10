@@ -2,16 +2,11 @@ pub mod album;
 pub mod artist;
 pub mod inventory;
 pub mod variant;
-pub mod fake;
 
 
 #[cfg(feature="arangodb")]
 pub mod edge;
 
-
-pub fn timestamp() -> u64 {
- 0
-}
 
 pub trait ReqModelTraits:
     serde::de::DeserializeOwned + serde::ser::Serialize + DocDetails + Sync + Send + Clone

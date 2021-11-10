@@ -4,7 +4,6 @@ pub mod test {
 
 
     use lazy_static::lazy_static;
-    use tokio::io::{AsyncReadExt};
     use tokio::sync::{Mutex};
 
     use discuits_api::engine::{db::*, session::*};

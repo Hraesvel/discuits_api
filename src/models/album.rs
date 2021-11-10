@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
-use model_write_derive::*;
+use crate::macros::*;
 
+mod ver;
+
+#[include_database_fields(timestamp)]
 /// Album data type
 #[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
 pub struct Album {
@@ -36,8 +39,8 @@ impl Album {
     }
 
     pub fn change_id<T>(&mut self, new_id: T) -> &mut Self
-        where
-            T: Into<Cow<'static, str>>,
+    where
+        T: Into<Cow<'static, str>>,
     {
         self.key = new_id.into();
         self.id = format!("album/{}", self.key).into();
@@ -70,6 +73,7 @@ pub mod read {
     use crate::engine::db::arangodb::preludes::*;
     use crate::engine::EngineError;
     use crate::io::read::Get;
+    use crate::models::album::ver::AlbumVer;
     use crate::models::{album::Album, DocDetails, ReqModelTraits};
 
     #[crate::async_trait]
@@ -79,8 +83,8 @@ pub mod read {
 
         /// Gets all Albums from storage `Db`
         async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
-            where
-                Self: ReqModelTraits,
+        where
+            Self: ReqModelTraits,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -88,15 +92,15 @@ pub mod read {
                 .batch_size(25)
                 .build();
 
-            let cursor: Cursor<Self> = engine.db().aql_query_batch(query).await?;
-            let col: Vec<Self> = cursor_digest(cursor, engine).await?;
+            let cursor: Cursor<Self::Document> = engine.db().aql_query_batch(query).await?;
+            let col: Vec<Self::Document> = cursor_digest(cursor, engine).await?;
 
             Ok(col)
         }
 
         /// Gets a single Albums from storage `Db`
         async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
-            let col: Self = engine
+            let col: Self::Document = engine
                 .db()
                 .collection("album")
                 .await?
@@ -120,12 +124,10 @@ pub mod read {
 mod test {
     use std::borrow::Cow;
 
-    use tokio::io::AsyncReadExt;
-
-    use crate::engine::db::DbBasics;
     use crate::engine::db::test::common;
-    use crate::engine::EngineError;
+    use crate::engine::db::DbBasics;
     use crate::engine::session::test::common_session_db;
+    use crate::engine::EngineError;
     use crate::io::read::{EngineGet, Get};
     use crate::io::write::Write;
     use crate::models::album::Album;
@@ -166,6 +168,7 @@ mod test {
         let engine_read_trait = db.get_all::<Album>().await?;
         let implicit_get_from_db = Album::get_all(&db).await?;
 
+        dbg!(&implicit_get_from_db);
         assert_eq!(engine_read_trait.len(), implicit_get_from_db.len());
 
         Ok(())
@@ -173,12 +176,8 @@ mod test {
 
     #[tokio::test]
     async fn test_session_insert_album() -> TestResult {
-        let s = common_session_db()
-            .await?.clone();
-        let s_read = s
-            .db()
-            .read()
-            .await;
+        let s = common_session_db().await?.clone();
+        let s_read = s.db().read().await;
 
         let mut a = Album::new();
         a.name = Cow::from("with session");

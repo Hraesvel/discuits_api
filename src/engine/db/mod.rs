@@ -67,6 +67,16 @@ pub struct DbBuilder<'a, T> {
     phantom: PhantomData<T>,
 }
 
+impl<'a> Default for DbBuilder<'a, ArangoDb> {
+    fn default() -> Self {
+        Self {
+            auth_type: AuthType::NoAuth,
+            host: DEFAULT_HOST,
+            db_name: "",
+            phantom: PhantomData,
+        }
+    }
+}
 
 impl<'a> DbBuilder<'a, ArangoDb> {
     pub fn new() -> Self {

@@ -1,6 +1,7 @@
 use crate::models::ReqModelTraits;
 
 /// Trait for implementing `GET` like methods.
+/// Where the generic represents the engine i.e. `ArangoDB`
 #[crate::async_trait]
 pub trait Get<T> {
     type E;

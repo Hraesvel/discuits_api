@@ -1,13 +1,9 @@
-
-
-
+use actix_web::web::{self, Data};
 use actix_web::{App, HttpServer, Responder};
 
-use actix_web::web::{self, Data};
-
 use discuits_api::engine::db::{ArangoDb, AuthType, Db, DbBasics, DbBuilder};
-use discuits_api::engine::EngineError;
 use discuits_api::engine::session::Session;
+use discuits_api::engine::EngineError;
 use discuits_api::io::Get;
 use discuits_api::models::album::Album;
 
@@ -21,12 +17,11 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(session.clone())
-            .service(web::scope("/app")
-                .route("", web::get().to(hello)))
+            .service(web::scope("/app").route("", web::get().to(hello)))
     })
-        .bind("127.0.0.1:8181")?
-        .run()
-        .await
+    .bind("127.0.0.1:8181")?
+    .run()
+    .await
 }
 
 async fn config_database() -> Result<Db<ArangoDb>, EngineError> {
@@ -40,7 +35,6 @@ async fn config_database() -> Result<Db<ArangoDb>, EngineError> {
         .await?;
     Ok(Db::new(db))
 }
-
 
 async fn config_database_2() -> Result<Session<Db<ArangoDb>>, EngineError> {
     let db = DbBuilder::new()
@@ -57,5 +51,7 @@ async fn config_database_2() -> Result<Session<Db<ArangoDb>>, EngineError> {
 async fn hello(data: Data<Session<Db<ArangoDb>>>) -> impl Responder {
     let reader = data.db().read().await;
     let a = Album::get_all(&reader).await;
-    format!("Using Database: {:?}", a)
+    let json =
+        serde_json::to_string::<Album>(&a.unwrap()[0]).unwrap_or_else(|_| "failed to parse".to_string());
+    format!("Using Database: {:?}", json)
 }

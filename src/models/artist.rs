@@ -1,10 +1,9 @@
 use std::borrow::Cow;
 
-use model_write_derive::*;
+use crate::macros::*;
 
-// use crate::models::DocDetails;
-// use crate::models::ReqModelTraits;
 
+#[include_database_fields(timestamp)]
 /// Artist Data type
 #[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
 pub struct Artist {

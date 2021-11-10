@@ -1,4 +1,6 @@
-#![warn(missing_docs)]
+#![warn(
+// missing_docs
+)]
 //! # Discuits Api
 
 #[macro_use]

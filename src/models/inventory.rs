@@ -2,8 +2,9 @@ use std::borrow::Cow;
 
 use uuid::Uuid;
 
-use model_write_derive::*;
+use crate::macros::*;
 
+#[include_database_fields(timestamp)]
 #[derive(Debug, Clone, ModelTrait, WriteToArango, Default, Deserialize, Serialize)]
 pub struct Inventory {
     /// ArangonDb _id
@@ -30,4 +31,3 @@ impl Inventory {
         self
     }
 }
-

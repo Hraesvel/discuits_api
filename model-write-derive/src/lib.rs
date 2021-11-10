@@ -12,7 +12,7 @@ fn getter<T: Any>(field: &Ident) -> TokenStream2 {
     let get_ident = quote::format_ident!("get_{}", field);
     // Extract Generic type name
     let t = std::any::type_name::<T>().split("::").last().unwrap();
-    let tt: Type = syn::parse_str(&t).unwrap();
+    let tt: Type = syn::parse_str(t).unwrap();
 
     quote! {pub fn #get_ident (&self) -> #tt { self.#field }}
 }
@@ -21,7 +21,7 @@ fn setter<T: Any>(field: &Ident) -> TokenStream2 {
     let set_ident = quote::format_ident!("set_{}", field);
     // Extract Generic type name
     let t = std::any::type_name::<T>().split("::").last().unwrap();
-    let tt: Type = syn::parse_str(&t).unwrap();
+    let tt: Type = syn::parse_str(t).unwrap();
     quote! {pub fn #set_ident (&mut self, value: #tt ) { self.#field = value }}
 }
 
@@ -45,7 +45,7 @@ where
 }
 
 #[proc_macro_attribute]
-pub fn concon(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn include_database_fields(args: TokenStream, item: TokenStream) -> TokenStream {
     let mut sig = parse_macro_input!(item as DeriveInput);
 
     let parse_args = parse_arguments(args);
@@ -110,8 +110,6 @@ fn add_methods(sig: &mut DeriveInput, arr: HashSet<String>) -> TokenStream2 {
             };
 
             *state = quote!(#state #output);
-            println!("State: {}", &state);
-
             Some(output)
         });
 
@@ -123,6 +121,7 @@ fn add_methods(sig: &mut DeriveInput, arr: HashSet<String>) -> TokenStream2 {
 
 fn parse_arguments(attr: TokenStream) -> Option<HashSet<String>> {
     let attr = attr.to_string();
+
     println!("Arguments: {}", &attr);
 
     if attr.contains('_') || attr.contains("()") {
@@ -131,8 +130,8 @@ fn parse_arguments(attr: TokenStream) -> Option<HashSet<String>> {
 
     let mut arr: HashSet<String> = HashSet::new();
 
-    if attr.contains(",") {
-        arr = attr.split(",").map(|x| x.trim().into()).collect();
+    if attr.contains(',') {
+        arr = attr.split(',').map(|x| x.trim().into()).collect();
     } else {
         arr.insert(attr.trim().to_string());
     }

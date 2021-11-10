@@ -56,6 +56,9 @@ impl Edge {
         }
     }
 
+    /// Method for linking many entities to one
+    /// via arangodb edge
+    /// this method doesn't check if the parent or children
     pub async fn link_one_to_many(
         engine: &ArangoDb,
         edge_name: &'static str,
@@ -64,23 +67,22 @@ impl Edge {
     ) -> Result<Vec<Box<dyn BoxedDoc>>, EngineError> {
         let mut jobs = Vec::new();
 
+        // create collection of futures
         for child in children {
             let edge = Edge::new(edge_name, parent.clone(), child);
             jobs.push(engine.insert(edge));
         }
+
         let out = futures::future::join_all(jobs).await;
         if out.is_empty() {
             return Err(Box::new(DbError::FailedToCreate));
         }
-        let mut v = Vec::new();
 
-        for i in out {
-            if let Ok((_s, d)) = i {
-                v.push(d);
-            } else {
-                continue;
-            }
-        }
+        let v  = out
+            .into_iter()
+            .filter_map(|o| o.ok() )
+            .map(|(_s, d)| d)
+            .collect();
 
         Ok(v)
     }
