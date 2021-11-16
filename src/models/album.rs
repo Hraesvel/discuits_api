@@ -71,7 +71,7 @@ pub mod read {
     use arangors::{AqlQuery, Cursor};
 
     use crate::engine::db::arangodb::preludes::*;
-    use crate::engine::EngineError;
+    use crate::engine::{DbError, EngineError};
     use crate::io::read::Get;
     use crate::models::album::ver::AlbumVer;
     use crate::models::{album::Album, DocDetails, ReqModelTraits};
@@ -86,11 +86,7 @@ pub mod read {
         where
             Self: ReqModelTraits,
         {
-            let query = AqlQuery::builder()
-                .query(aql_snippet::GET_ALL)
-                .bind_var("@collection", Self::collection_name())
-                .batch_size(25)
-                .build();
+            let query = ArangoDb::aql_get_all(Self::collection_name());
 
             let cursor: Cursor<Self::Document> = engine.db().aql_query_batch(query).await?;
             let col: Vec<Self::Document> = cursor_digest(cursor, engine).await?;
@@ -100,14 +96,13 @@ pub mod read {
 
         /// Gets a single Albums from storage `Db`
         async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
-            let col: Self::Document = engine
-                .db()
-                .collection("album")
-                .await?
-                .document(id)
-                .await?
-                .document;
-            Ok(col)
+            let query = ArangoDb::aql_get_single(Self::collection_name(), id);
+            let mut resp: Option<Self::Document> = engine.db.aql_query(query).await?.pop();
+            if let Some(doc) = resp {
+                Ok(doc)
+            } else {
+                DbError::ItemNotFound.into()
+            }
         }
 
         async fn find<'a>(
@@ -119,6 +114,7 @@ pub mod read {
             todo!()
         }
     }
+
 }
 
 #[cfg(test)]
@@ -141,7 +137,9 @@ mod test {
         let mut new_album = Album::new();
         new_album.name = Cow::from("Owl House");
 
-        let resp = db.insert(new_album).await;
+        let resp = db.insert(new_album.clone()).await;
+        assert!(resp.is_ok());
+        let resp = dbg!(db.get::<Album>(new_album.id.as_ref()).await);
         assert!(resp.is_ok());
         Ok(())
     }

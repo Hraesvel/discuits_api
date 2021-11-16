@@ -40,11 +40,7 @@ impl EngineGet for ArangoDb {
         use crate::engine::db::arangodb::aql_snippet;
         use arangors::{AqlQuery, Cursor};
 
-        let query = AqlQuery::builder()
-            .query(aql_snippet::GET_ALL)
-            .bind_var("@collection", T::collection_name())
-            .batch_size(5)
-            .build();
+        let query = Self::aql_get_all(T::collection_name());
 
         let cursor: Cursor<T> = self.db().aql_query_batch(query).await?;
         let collection = cursor_digest(cursor, self).await?;
@@ -52,11 +48,17 @@ impl EngineGet for ArangoDb {
         Ok(collection)
     }
 
-    async fn get<T>(&self, _id: &str) -> Result<T, Self::E>
+    async fn get<T>(&self, id: &str) -> Result<T, Self::E>
     where
         T: ReqModelTraits,
     {
-        let col: T = self
+
+        let aql = Self::aql_get_single(T::collection_name(), id);
+        let col: Vec<T> = self.db.aql_query(aql).await?;
+
+        Ok(col[0].clone())
+    }
+
     async fn find<T: ReqModelTraits>(&self, k: &str, v: &str) -> Result<T, Self::E> {
         let val = v.trim().to_ascii_lowercase();
     let resp : Option<T> = self
