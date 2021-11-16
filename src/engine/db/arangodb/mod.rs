@@ -82,10 +82,11 @@ impl ArangoDb {
 // methods
 impl ArangoDb {
     pub fn filter<'a>(value: &'a str, field: &'a str, collection: &'a str) -> AqlQuery<'a> {
+    pub fn aql_filter<'a>(k: &'a str, v: &'a str, collection: &'a str) -> AqlQuery<'a> {
         AqlQuery::builder()
             .query(FILTER)
-            .bind_var("field", field)
-            .bind_var("value", value)
+            .bind_var("k", k)
+            .bind_var("v", v)
             .bind_var("@collection", collection)
             .build()
     }

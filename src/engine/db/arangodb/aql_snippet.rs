@@ -2,7 +2,7 @@ pub(crate) const GET_ALL: &str = "FOR doc IN @@collection \
                                   RETURN doc";
 
 pub(crate) const FILTER: &str = "FOR doc IN @@collection \
-                                 FILTER doc.@field == @value \
+                                 FILTER doc.@k == @v \
                                  RETURN doc";
 
 pub(crate) const INSERT: &str = "INSERT @doc INTO @@collection \
