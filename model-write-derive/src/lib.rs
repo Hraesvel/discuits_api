@@ -122,7 +122,7 @@ fn add_methods(sig: &mut DeriveInput, arr: HashSet<String>) -> TokenStream2 {
 fn parse_arguments(attr: TokenStream) -> Option<HashSet<String>> {
     let attr = attr.to_string();
 
-    println!("Arguments: {}", &attr);
+    // println!("Arguments: {}", &attr);
 
     if attr.contains('_') || attr.contains("()") {
         return None;

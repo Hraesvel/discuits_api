@@ -1,10 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-
-use crate::engine::db::{Db};
-
-
+use crate::engine::db::Db;
 
 pub trait NewSession {}
 
@@ -13,7 +10,7 @@ pub struct Session<T: ?Sized>(Arc<T>);
 
 impl<T> Session<Db<T>> {
     pub fn new(t: T) -> Session<Db<T>> {
-    Session(Arc::new(Db::new(t)))
+        Session(Arc::new(Db::new(t)))
     }
 }
 
@@ -51,10 +48,10 @@ impl<T: ?Sized> From<Arc<T>> for Session<T> {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::engine::db::{AuthType, Db};
     use crate::engine::db::arangodb::ArangoDb;
-    use crate::engine::EngineError;
+    use crate::engine::db::{AuthType, Db};
     use crate::engine::session::Session;
+    use crate::engine::EngineError;
 
     pub async fn common_session_db() -> Result<Session<Db<ArangoDb>>, EngineError> {
         let db = ArangoDb::builder()

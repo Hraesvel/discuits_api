@@ -37,8 +37,7 @@ impl EngineGet for ArangoDb {
     where
         T: ReqModelTraits,
     {
-        use crate::engine::db::arangodb::aql_snippet;
-        use arangors::{AqlQuery, Cursor};
+        use arangors::Cursor;
 
         let query = Self::aql_get_all(T::collection_name());
 
@@ -52,7 +51,6 @@ impl EngineGet for ArangoDb {
     where
         T: ReqModelTraits,
     {
-
         let aql = Self::aql_get_single(T::collection_name(), id);
         let col: Vec<T> = self.db.aql_query(aql).await?;
 
@@ -61,15 +59,16 @@ impl EngineGet for ArangoDb {
 
     async fn find<T: ReqModelTraits>(&self, k: &str, v: &str) -> Result<T, Self::E> {
         let val = v.trim().to_ascii_lowercase();
-    let resp : Option<T> = self
+        let resp: Option<T> = self
             .db()
             .aql_query(ArangoDb::aql_filter(k, &val, T::collection_name()))
             .await?
             .pop();
-        if let Some(doc) = resp { Ok(doc) } else {
-             DbError::ItemNotFound.into()
+        if let Some(doc) = resp {
+            Ok(doc)
+        } else {
+            DbError::ItemNotFound.into()
         }
-
     }
 }
 

@@ -1,17 +1,16 @@
-
-use arangors::{AqlQuery, ClientError, Connection, Database};
 use arangors::uclient::reqwest::ReqwestClient;
+use arangors::{AqlQuery, ClientError, Connection, Database};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
-use crate::engine::db::{Db, DbBasics, DbBuilder, DEFAULT_HOST};
 use crate::engine::db::arangodb::aql_snippet::*;
+use crate::engine::db::{Db, DbBasics, DbBuilder, DEFAULT_HOST};
 use crate::engine::EngineError;
+use crate::models::DocDetails;
 
 pub mod aql_snippet;
 pub mod ops;
 pub mod preludes;
-
 
 #[derive(Debug)]
 pub struct ArangoDb {
@@ -79,9 +78,24 @@ impl ArangoDb {
     }
 }
 
-// methods
+/// Simple AQL generation methods
 impl ArangoDb {
-    pub fn filter<'a>(value: &'a str, field: &'a str, collection: &'a str) -> AqlQuery<'a> {
+    pub fn aql_get_all(collection_name: &str) -> AqlQuery {
+        AqlQuery::builder()
+            .query(aql_snippet::GET_ALL)
+            .bind_var("@collection", collection_name)
+            .batch_size(25)
+            .build()
+    }
+
+    pub fn aql_get_single<'a>(collection_name: &'a str, id: &'a str) -> AqlQuery<'a> {
+        AqlQuery::builder()
+            .query(aql_snippet::GET)
+            .bind_var("collection", collection_name)
+            .bind_var("id", id)
+            .build()
+    }
+
     pub fn aql_filter<'a>(k: &'a str, v: &'a str, collection: &'a str) -> AqlQuery<'a> {
         AqlQuery::builder()
             .query(FILTER)
@@ -91,13 +105,15 @@ impl ArangoDb {
             .build()
     }
 
-    pub fn upsert<T: Clone + Serialize + 'static>(
+    // TODO: change raw upsert
+    pub fn aql_upsert<T: Clone + Serialize + 'static + DocDetails>(
         document: T,
         collection: &'static str,
     ) -> AqlQuery<'static> {
         AqlQuery::builder()
-            .query(UPSERT_EDGE)
+            .query(UPSERT)
             .bind_var("@collection", collection)
+            .bind_var("key", document.key())
             .bind_var("doc", serde_json::to_value(&document).unwrap())
             .build()
     }
@@ -130,7 +146,7 @@ impl<'a> DbBasics<'a> for Db<ArangoDb> {
         &self.db
     }
 
-    async fn db_info(&'a self)   {
+    async fn db_info(&'a self) {
         self.db.read().await.db_info()
     }
 }

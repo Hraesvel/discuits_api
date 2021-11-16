@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use arangors::aql::AqlQuery;
 
+use crate::engine::db::ArangoDb;
 use crate::engine::{DbError, EngineError};
-use crate::engine::db::{ArangoDb};
 use crate::io::Write;
 use crate::models::{BoxedDoc, DocDetails, ReqModelTraits};
 
@@ -78,9 +78,9 @@ impl Edge {
             return Err(Box::new(DbError::FailedToCreate));
         }
 
-        let v  = out
+        let v = out
             .into_iter()
-            .filter_map(|o| o.ok() )
+            .filter_map(|o| o.ok())
             .map(|(_s, d)| d)
             .collect();
 

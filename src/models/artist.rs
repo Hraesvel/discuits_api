@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use crate::macros::*;
 
-
 #[include_database_fields(timestamp)]
 /// Artist Data type
 #[derive(Debug, ModelTrait, WriteToArango, Default, Clone, Deserialize, Serialize)]
@@ -59,10 +58,10 @@ pub mod read {
     use arangors::{AqlQuery, Cursor};
     use async_trait::async_trait;
 
-    use crate::engine::{DbError, EngineError};
     use crate::engine::db::arangodb::aql_snippet;
-    use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::db::arangodb::ops::cursor_digest;
+    use crate::engine::db::arangodb::ArangoDb;
+    use crate::engine::{DbError, EngineError};
     use crate::io::read::Get;
     use crate::models::artist::Artist;
     use crate::models::DocDetails;
@@ -74,8 +73,8 @@ pub mod read {
 
         /// Gets all artists from storage `Db`
         async fn get_all(engine: &ArangoDb) -> Result<Vec<Self::Document>, Self::E>
-            where
-                Self: DocDetails,
+        where
+            Self: DocDetails,
         {
             let query = AqlQuery::builder()
                 .query(aql_snippet::GET_ALL)
@@ -91,8 +90,8 @@ pub mod read {
 
         /// Gets a single artists from storage `Db`
         async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E>
-            where
-                Self: DocDetails,
+        where
+            Self: DocDetails,
         {
             let col: Self = engine
                 .db()
@@ -104,19 +103,14 @@ pub mod read {
             Ok(col)
         }
 
-        async fn find<'a>(
-            k: &str,
-            v: &str,
-            engine: &ArangoDb,
-        ) -> Result<Self::Document, Self::E>
-            where
-                Self: DocDetails,
+        async fn find<'a>(k: &str, v: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E>
+        where
+            Self: DocDetails,
         {
             let val = v.trim().to_ascii_lowercase();
-            println!("Filtering with {}", filter);
             let resp: Vec<Artist> = engine
                 .db
-                .aql_query(ArangoDb::aql_filter(k, val, Self::collection_name()))
+                .aql_query(ArangoDb::aql_filter(k, &val, Self::collection_name()))
                 .await?;
             dbg!(&resp);
             if resp.is_empty() {
@@ -131,10 +125,10 @@ pub mod read {
 mod test {
     use std::borrow::Cow;
 
-    use crate::engine::db::DbBasics;
     use crate::engine::db::test::common;
-    use crate::engine::EngineError;
+    use crate::engine::db::DbBasics;
     use crate::engine::session::test::common_session_db;
+    use crate::engine::EngineError;
     use crate::io::read::{EngineGet, Get};
     use crate::io::write::EngineWrite;
     use crate::models::artist::Artist;
@@ -187,8 +181,7 @@ mod test {
 
     #[tokio::test]
     async fn test_session_insert_artist() -> TestResult {
-        let s = common_session_db()
-            .await?.clone();
+        let s = common_session_db().await?.clone();
         let s_read = s.db().read().await;
 
         let mut a = Artist::new();

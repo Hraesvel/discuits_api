@@ -3,10 +3,8 @@ pub mod artist;
 pub mod inventory;
 pub mod variant;
 
-
-#[cfg(feature="arangodb")]
+#[cfg(feature = "arangodb")]
 pub mod edge;
-
 
 pub trait ReqModelTraits:
     serde::de::DeserializeOwned + serde::ser::Serialize + DocDetails + Sync + Send + Clone

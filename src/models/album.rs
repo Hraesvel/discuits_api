@@ -68,12 +68,11 @@ impl Album {
 pub mod read {
     //! module adds static methods to
     //! handle simple reading tasks
-    use arangors::{AqlQuery, Cursor};
+    use arangors::Cursor;
 
     use crate::engine::db::arangodb::preludes::*;
     use crate::engine::{DbError, EngineError};
     use crate::io::read::Get;
-    use crate::models::album::ver::AlbumVer;
     use crate::models::{album::Album, DocDetails, ReqModelTraits};
 
     #[crate::async_trait]
@@ -97,7 +96,7 @@ pub mod read {
         /// Gets a single Albums from storage `Db`
         async fn get(id: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
             let query = ArangoDb::aql_get_single(Self::collection_name(), id);
-            let mut resp: Option<Self::Document> = engine.db.aql_query(query).await?.pop();
+            let resp: Option<Self::Document> = engine.db.aql_query(query).await?.pop();
             if let Some(doc) = resp {
                 Ok(doc)
             } else {
@@ -105,16 +104,21 @@ pub mod read {
             }
         }
 
-        async fn find<'a>(
-            k: &str,
-            v: &str,
-            engine: &ArangoDb,
-        ) -> Result<Self::Document, Self::E> {
-            let query = ArangoDb::aql_filter(k, v, Self::collection_name());
-            todo!()
+        // Todo
+        async fn find<'a>(k: &str, v: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
+            let val = v.trim().to_ascii_lowercase();
+            let resp: Option<Self::Document> = engine
+                .db()
+                .aql_query(ArangoDb::aql_filter(k, &val, Self::collection_name()))
+                .await?
+                .pop();
+            if let Some(doc) = resp {
+                Ok(doc)
+            } else {
+                DbError::ItemNotFound.into()
+            }
         }
     }
-
 }
 
 #[cfg(test)]

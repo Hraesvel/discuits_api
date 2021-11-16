@@ -6,7 +6,6 @@
 #[macro_use]
 extern crate serde;
 
-
 pub use async_trait::async_trait;
 
 pub use model_write_derive as macros;
@@ -18,4 +17,3 @@ pub mod io;
 pub mod models;
 
 pub mod time;
-

@@ -18,7 +18,7 @@ pub enum DbError {
 }
 
 impl DbError {
-    pub fn into<T>(self) -> Result<T,EngineError> {
+    pub fn into<T>(self) -> Result<T, EngineError> {
         Err(Box::new(self))
     }
 }

@@ -2,12 +2,11 @@
 pub mod test {
     use std::error::Error;
 
-
     use lazy_static::lazy_static;
-    use tokio::sync::{Mutex};
+    use tokio::sync::Mutex;
 
-    use discuits_api::engine::{db::*, session::*};
     use discuits_api::engine::db::arangodb::ArangoDb;
+    use discuits_api::engine::{db::*, session::*};
 
     lazy_static! {
         pub static ref USED_IDS: Mutex<Vec<String>> = {
