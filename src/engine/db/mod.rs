@@ -109,9 +109,9 @@ impl<'a> DbBuilder<'a, ArangoDb> {
     /// Attempt to connect to the Db
     pub async fn connect(&mut self) -> Result<ArangoDb, EngineError> {
         if self.host.is_empty() {
-            return Err(DbError::NoHostProvided.into());
+            return DbError::NoHostProvided.into();
         } else if self.db_name.is_empty() {
-            return Err(DbError::BlankDatabaseName.into());
+            return DbError::BlankDatabaseName.into();
         }
         let conn: Connection = match self.auth_type {
             AuthType::NoAuth => Connection::establish_without_auth(self.host).await?,

@@ -186,7 +186,7 @@ pub fn basic_arangodb_write(input: proc_macro::TokenStream) -> proc_macro::Token
                 let parse = id.split('/').collect::<Vec<&str>>();
                 let aql = crate::engine::db::arangodb::ArangoDb::remove(parse[1], parse[0]);
                 let mut value: Vec<#name> = self.db.aql_query(aql).await?;
-                if value.is_empty() { return Err(crate::engine::DbError::ItemNotFound.into()) }
+                if value.is_empty() { return crate::engine::DbError::ItemNotFound.into() }
                 Ok(value.swap_remove(0))
              }
         }
@@ -209,7 +209,7 @@ pub fn basic_arangodb_write(input: proc_macro::TokenStream) -> proc_macro::Token
                 .bind_var("doc", serde_json::to_value(&doc).unwrap())
                 .build();
                 let resp: Vec<#name> = self.db().aql_query(aql).await?;
-                if resp.is_empty() {return Err(Box::new(crate::engine::DbError::FailedToCreate))}
+                if resp.is_empty() {return crate::engine::DbError::FailedToCreate.into()}
 
                 let new_doc = resp[0].clone();
 

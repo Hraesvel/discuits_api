@@ -120,7 +120,7 @@ impl EngineDelete for ArangoDb {
         let aql = ArangoDb::remove(parse[1], parse[0]);
         let mut value: Vec<T> = self.db.aql_query(aql).await?;
         if value.is_empty() {
-            return Err(DbError::ItemNotFound.into());
+            return DbError::ItemNotFound.into();
         }
         Ok(value.swap_remove(0))
     }
