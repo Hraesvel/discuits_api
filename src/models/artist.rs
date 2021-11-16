@@ -105,22 +105,22 @@ pub mod read {
         }
 
         async fn find<'a>(
-            with: &str,
-            field: &str,
+            k: &str,
+            v: &str,
             engine: &ArangoDb,
         ) -> Result<Self::Document, Self::E>
             where
                 Self: DocDetails,
         {
-            let filter = with.trim().to_ascii_lowercase();
+            let val = v.trim().to_ascii_lowercase();
             println!("Filtering with {}", filter);
             let resp: Vec<Artist> = engine
                 .db
-                .aql_query(ArangoDb::filter(&filter, field, Self::collection_name()))
+                .aql_query(ArangoDb::aql_filter(k, val, Self::collection_name()))
                 .await?;
             dbg!(&resp);
             if resp.is_empty() {
-                return Err(Box::new(DbError::ItemNotFound));
+                return DbError::ItemNotFound.into();
             }
             Ok(resp[0].clone())
         }

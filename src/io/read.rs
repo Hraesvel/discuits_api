@@ -13,7 +13,7 @@ pub trait Get<T> {
     /// Method to get a single Element
     async fn get(id: &str, engine: &T) -> Result<Self::Document, Self::E>;
 
-    async fn find<'a>(with: &str, field: &str, engine: &T) -> Result<Self::Document, Self::E>;
+    async fn find<'a>(k: &str, v: &str, engine: &T) -> Result<Self::Document, Self::E>;
 }
 
 /// Trait for implementing `GET for engines` like methods.
@@ -29,5 +29,5 @@ pub trait EngineGet {
 
     /// Method to find a single Element
     /// with a key(`field`), value pair
-    async fn find<T: ReqModelTraits>(&self, value: &str, field: &str) -> Result<T, Self::E>;
+    async fn find<T: ReqModelTraits>(&self, k: &str, v: &str) -> Result<T, Self::E>;
 }

@@ -111,10 +111,11 @@ pub mod read {
         }
 
         async fn find<'a>(
-            _with: &str,
-            _field: &str,
-            _engine: &ArangoDb,
+            k: &str,
+            v: &str,
+            engine: &ArangoDb,
         ) -> Result<Self::Document, Self::E> {
+            let query = ArangoDb::aql_filter(k, v, Self::collection_name());
             todo!()
         }
     }

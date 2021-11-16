@@ -57,25 +57,17 @@ impl EngineGet for ArangoDb {
         T: ReqModelTraits,
     {
         let col: T = self
+    async fn find<T: ReqModelTraits>(&self, k: &str, v: &str) -> Result<T, Self::E> {
+        let val = v.trim().to_ascii_lowercase();
+    let resp : Option<T> = self
             .db()
-            .collection(T::collection_name())
+            .aql_query(ArangoDb::aql_filter(k, &val, T::collection_name()))
             .await?
-            .document(_id)
-            .await?
-            .document;
-        Ok(col)
-    }
-
-    async fn find<T: ReqModelTraits>(&self, value: &str, field: &str) -> Result<T, Self::E> {
-        let filter = value.trim().to_ascii_lowercase();
-        let resp: Vec<T> = self
-            .db()
-            .aql_query(ArangoDb::filter(&filter, field, T::collection_name()))
-            .await?;
-        if resp.is_empty() {
-            return Err(Box::new(DbError::ItemNotFound));
+            .pop();
+        if let Some(doc) = resp { Ok(doc) } else {
+             DbError::ItemNotFound.into()
         }
-        Ok(resp[0].clone())
+
     }
 }
 
