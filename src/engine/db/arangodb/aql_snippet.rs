@@ -1,3 +1,5 @@
+pub(crate) const GET: &str = r#"RETURN DOCUMENT(CONCAT(@collection, "/", @id))"#;
+
 pub(crate) const GET_ALL: &str = "FOR doc IN @@collection \
                                   RETURN doc";
 
@@ -14,9 +16,9 @@ pub(crate) const UPSERT_EDGE: &str = "UPSERT( {_from: @doc._from, _to: @doc._to}
                                 UPDATE({}) in @@collection \
                                 return NEW";
 
-pub(crate) const UPSERT: &str = "UPSERT(@doc) \
+pub(crate) const UPSERT: &str = "UPSERT( _key: @key ) \
                                 INSERT(@doc) \
-                                UPDATE({}) in @@collection \
+                                UPDATE(@doc) in @@collection \
                                 return NEW";
 
 pub(crate) const REMOVE: &str = "REMOVE @key IN @@collection RETURN OLD";
