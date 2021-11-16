@@ -17,6 +17,12 @@ pub enum DbError {
     FailedToCreate,
 }
 
+impl DbError {
+    pub fn into<T>(self) -> Result<T,EngineError> {
+        Err(Box::new(self))
+    }
+}
+
 impl std::fmt::Display for DbError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
@@ -53,7 +59,7 @@ mod test {
 
     #[test]
     fn test_error() {
-        let err: std::result::Result<(), EngineError> = Err(DbError::NoHostProvided.into());
+        let err: std::result::Result<(), EngineError> = DbError::NoHostProvided.into();
         if let Err(e) = err {
             println!("{}", e);
         }
