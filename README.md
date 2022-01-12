@@ -1,9 +1,10 @@
 # Discuits API
-prototype for a music album collection and inventory system.
+Sandbox/prototype for a music album collection and inventory system.
+
+This is a toy project, ment for learning and not in away gear for distrbution.
 
 # Usage:
 
-This is a toy project, ment for learning and not in away gear at the moment for distrbution.
 
 currenly this project is gear to use [ArangoDB](https://www.arangodb.com/download-major/) as the database.
 
