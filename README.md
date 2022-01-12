@@ -1,6 +1,13 @@
 # Discuits API
 prototype for a music album collection and inventory system.
 
+# Usage:
+
+This is a toy project, ment for learning and not in away gear at the moment for distrbution.
+
+currenly this project is gear to use [ArangoDB](https://www.arangodb.com/download-major/) as the database.
+
+
 ## Licenses
 Licensed under either of
 - Apache License, Version 2.0, (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
