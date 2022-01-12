@@ -55,11 +55,8 @@ pub(crate) mod test {
 
     pub async fn common_session_db() -> Result<Session<Db<ArangoDb>>, EngineError> {
         let db = ArangoDb::builder()
-            .db_name("discket_dev")
-            .auth_type(AuthType::Jwt {
-                user: "discket",
-                pass: "babyYoda",
-            })
+            .db_name("discket_test")
+            .auth_type(AuthType::NoAuth)
             .connect()
             .await?;
         let session: Session<Db<ArangoDb>> = Session::new(db);
