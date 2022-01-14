@@ -1,5 +1,3 @@
-use actix_web::dev::Payload;
-use actix_web::{Error, HttpRequest};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -15,7 +13,7 @@ impl<T: ?Sized + 'static> actix_web::FromRequest for Session<T> {
     type Error = actix_web::Error;
     type Future = futures::future::Ready<Result<Session<T>, Self::Error>>;
 
-    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+    fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
         if let Some(st) = req.app_data::<Session<T>>() {
             futures::future::ok(st.clone())
         } else {

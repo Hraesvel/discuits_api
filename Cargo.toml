@@ -12,7 +12,7 @@ members = ["server"]
 default = ["arangodb"]
 pgsql = []
 arangodb = []
-actix = []
+actix = ["actix-web"]
 
 [build]
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
@@ -37,7 +37,7 @@ chrono = "^0.4"
 chrono-tz = { version = "0.4", features = ["serde"] }
 arangoq = "0.3.4"
 reqwest = "0.11.7"
-actix-web = "4.0.0-beta.19"
+actix-web = { version = "4.0.0-beta.19" , optional = true}
 log = "0.4"
 
 [dev-dependencies]
