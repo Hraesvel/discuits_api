@@ -11,6 +11,18 @@ where
     async fn insert(&self, doc: T) -> Result<(String, Box<dyn BoxedDoc>), Self::E>;
 
     async fn update(&self, doc: T) -> Result<(), Self::E>;
+
+    async fn insert_collection(
+        &self,
+        jobs: Vec<T>,
+    ) -> Result<Vec<String>, Self::E> {
+        let mut resp = Vec::new();
+        for job in jobs {
+            let r = self.insert(job).await?;
+            resp.push(r.0);
+        }
+        Ok(resp)
+    }
 }
 
 #[crate::async_trait]
