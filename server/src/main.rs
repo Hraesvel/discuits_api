@@ -1,6 +1,5 @@
 use actix_web::web::{self, get, Data};
-use actix_web::{App, HttpResponse, HttpServer, Responder};
-use std::ops::Deref;
+use actix_web::{App, HttpResponse, HttpServer};
 
 use discuits_api::engine::db::{ArangoDb, AuthType, Db, DbBasics, DbBuilder};
 use discuits_api::engine::session::Session;

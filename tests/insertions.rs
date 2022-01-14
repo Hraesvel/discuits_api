@@ -3,7 +3,7 @@ pub mod initialisation;
 #[cfg(test)]
 mod test_generics {
     use discuits_api::engine::db::DbBasics;
-    use discuits_api::io::{read::EngineGet, Write, delete::EngineDelete};
+    use discuits_api::io::{delete::EngineDelete, read::EngineGet, Write};
     use discuits_api::models::BoxedDoc;
     use discuits_api::models::{album::*, artist::*, edge::*, DocDetails};
     use discuits_api::{insert_many, one_to_many};
@@ -53,7 +53,6 @@ mod test_generics {
         Ok(())
     }
 
-
     #[tokio::test]
     async fn remove_an_element() -> SimpleResult {
         let seesion = with_arangodb().await?;
@@ -64,7 +63,6 @@ mod test_generics {
         let resp = db.insert(album).await?;
 
         dbg!(db.remove::<Album>(&resp.0).await?);
-
 
         Ok(())
     }

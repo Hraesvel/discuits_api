@@ -1,4 +1,4 @@
-use std::error::Error;
+
 use std::fmt::Formatter;
 
 pub mod db;

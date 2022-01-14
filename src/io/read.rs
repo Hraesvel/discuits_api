@@ -1,4 +1,4 @@
-use crate::models::ReqModelTraits;
+use crate::models::{ReqModelTraits};
 
 /// Trait for implementing `GET` like methods.
 /// Where the generic represents the engine i.e. `ArangoDB`
@@ -15,6 +15,7 @@ pub trait Get<T> {
 
     async fn find<'a>(k: &str, v: &str, engine: &T) -> Result<Self::Document, Self::E>;
 }
+
 
 /// Trait for implementing `GET for engines` like methods.
 #[crate::async_trait]

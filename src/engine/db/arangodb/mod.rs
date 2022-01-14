@@ -6,11 +6,26 @@ use tokio::sync::RwLock;
 use crate::engine::db::arangodb::aql_snippet::*;
 use crate::engine::db::{Db, DbBasics, DbBuilder, DEFAULT_HOST};
 use crate::engine::EngineError;
-use crate::models::DocDetails;
+use crate::models::{DocDetails};
+use arangoq::{ArangoConnection};
+
 
 pub mod aql_snippet;
 pub mod ops;
 pub mod preludes;
+pub mod aql_marco;
+
+
+
+pub struct ArangoDB2(ArangoConnection);
+
+// impl ArangoDB2 {
+//     pub fn new(name: String,) -> Self {
+//         let conn = ArangoConnection::new(DEFAULT_HOST.to_string(), name, Client::default());
+//         Self(conn)
+//     }
+// }
+//
 
 #[derive(Debug)]
 pub struct ArangoDb {
@@ -80,6 +95,7 @@ impl ArangoDb {
 
 /// Simple AQL generation methods
 impl ArangoDb {
+
     pub fn aql_get_all(collection_name: &str) -> AqlQuery {
         AqlQuery::builder()
             .query(aql_snippet::GET_ALL)

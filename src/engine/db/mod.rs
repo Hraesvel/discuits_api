@@ -43,6 +43,7 @@ pub struct Db<T: ?Sized> {
 
 impl<T: ?Sized> Db<T> {}
 
+
 impl<T> Db<T> {
     pub fn new(db: T) -> Self {
         Self { db: RwLock::new(db) }

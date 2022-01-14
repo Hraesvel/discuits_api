@@ -55,16 +55,20 @@ impl Artist {
 
 pub mod read {
     //! module for handling reads for artist
+
+
     use arangors::{AqlQuery, Cursor};
-    use async_trait::async_trait;
+    use crate::async_trait;
 
     use crate::engine::db::arangodb::aql_snippet;
     use crate::engine::db::arangodb::ops::cursor_digest;
     use crate::engine::db::arangodb::ArangoDb;
     use crate::engine::{DbError, EngineError};
+
     use crate::io::read::Get;
     use crate::models::artist::Artist;
-    use crate::models::DocDetails;
+    use crate::models::{DocDetails};
+
 
     #[async_trait]
     impl Get<ArangoDb> for Artist {
@@ -119,6 +123,8 @@ pub mod read {
             Ok(resp[0].clone())
         }
     }
+
+
 }
 
 #[cfg(test)]

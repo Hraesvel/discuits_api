@@ -104,7 +104,7 @@ pub mod read {
             }
         }
 
-        // Todo
+
         async fn find<'a>(k: &str, v: &str, engine: &ArangoDb) -> Result<Self::Document, Self::E> {
             let val = v.trim().to_ascii_lowercase();
             let resp: Option<Self::Document> = engine
@@ -119,6 +119,7 @@ pub mod read {
             }
         }
     }
+
 }
 
 #[cfg(test)]
