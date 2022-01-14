@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fmt::Formatter;
 
 pub mod db;
@@ -31,7 +32,7 @@ impl std::fmt::Display for DbError {
             }
             DbError::BlankDatabaseName => write!(
                 f,
-                "{:?}, No Name of the Database was provided to the builder.",
+                "{:?}, Name for a Database was not provided to the builder.",
                 self
             ),
             DbError::InvalidIdentification => {
