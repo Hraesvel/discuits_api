@@ -1,15 +1,16 @@
 use actix_web::web::{self, get, Data};
 use actix_web::{App, HttpResponse, HttpServer};
 
+// Todo: preludes module for discuits_api
 use discuits_api::engine::db::{ArangoDb, AuthType, Db, DbBasics, DbBuilder};
 use discuits_api::engine::session::Session;
 use discuits_api::engine::{DbError, EngineError};
-use discuits_api::io::read::*;
+use discuits_api::io::read::EngineGet;
 use discuits_api::models::album::Album;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let session = config_database_2()
+    let session = config_database()
         .await
         .unwrap_or_else(|e| panic!("{:?}", e));
     let shared_data = session;
@@ -24,19 +25,7 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-async fn config_database() -> Result<Db<ArangoDb>, EngineError> {
-    let db = DbBuilder::new()
-        .db_name("discket_test")
-        .auth_type(AuthType::Jwt {
-            user: "discket_test",
-            pass: "",
-        })
-        .connect()
-        .await?;
-    Ok(Db::new(db))
-}
-
-async fn config_database_2() -> Result<Session<Db<ArangoDb>>, EngineError> {
+async fn config_database() -> Result<Session<Db<ArangoDb>>, EngineError> {
     let db = DbBuilder::new()
         .db_name("discket_test")
         .auth_type(AuthType::Jwt {
