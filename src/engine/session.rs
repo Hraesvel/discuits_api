@@ -1,3 +1,5 @@
+use actix_web::dev::Payload;
+use actix_web::{Error, HttpRequest};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -7,6 +9,29 @@ pub trait NewSession {}
 
 #[derive(Debug, Default)]
 pub struct Session<T: ?Sized>(Arc<T>);
+
+#[cfg(feature = "actix")]
+impl<T: ?Sized + 'static> actix_web::FromRequest for Session<T> {
+    type Error = actix_web::Error;
+    type Future = futures::future::Ready<Result<Session<T>, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+        if let Some(st) = req.app_data::<Session<T>>() {
+            futures::future::ok(st.clone())
+        } else {
+            log::debug!(
+                "Failed to extract `Data<{}>` for `{}` handler. For the Data extractor to work \
+                correctly, wrap the data with `Data::new()` and pass it to `App::app_data()`. \
+                Ensure that types align in both the set and retrieve calls.",
+                std::any::type_name::<T>(),
+                req.match_name().unwrap_or_else(|| req.path())
+            );
+
+            futures::future::err(actix_web::error::ErrorInternalServerError("Requested application data is not configured correctly. \
+                View/enable debug logs for more details."))
+        }
+    }
+}
 
 impl<T> Session<Db<T>> {
     pub fn new(t: T) -> Session<Db<T>> {
