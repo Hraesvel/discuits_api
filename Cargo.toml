@@ -5,10 +5,12 @@ authors = ["Martin Smith <mcodesmith@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 
+[workspace]
+members = ["server"]
+
 [features]
 default = ["arangodb"]
 pgsql = []
-mongodb = []
 arangodb = []
 
 [build]
@@ -21,17 +23,19 @@ lto = true
 
 [dependencies]
 model-write-derive = { path = "./model-write-derive" }
-lazy_static = "1.4.0"
+#lazy_static = "1.4.0"
 tokio = { version = "1", features = ["full", "macros", "sync", "io-util"] }
 async-trait = "^0.1.50"
 arangors = { git = "https://github.com/fMeow/arangors.git" }
 serde_json = "^1.0"
 serde = { version = "^1.0", features = ["derive"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
-dashmap = "^3"
+#dashmap = "^3"
 futures = "^0.3"
 chrono = "^0.4"
 chrono-tz = { version = "0.4", features = ["serde"] }
+arangoq = "0.3.4"
+reqwest = "0.11.7"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full", "macros", "time"] }
