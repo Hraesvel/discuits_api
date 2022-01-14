@@ -24,10 +24,10 @@ pub mod test {
     pub async fn setup_with_arangodb() -> Result<Session<Db<ArangoDb>>, BoxedError> {
         let database = ArangoDb::builder()
             .auth_type(AuthType::Jwt {
-                user: "discket_test",
+                user: "discuits_test",
                 pass: "",
             })
-            .db_name("discket_test")
+            .db_name("discuits_test")
             .connect()
             .await?;
 

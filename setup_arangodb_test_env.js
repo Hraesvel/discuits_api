@@ -1,6 +1,6 @@
 const user = require('@arangodb/users');
-const db_name = "discket_test";
-const user_name = 'discket_test';
+const db_name = "discuits_test";
+const user_name = 'discuits_test';
 
 // Create test user
 try {

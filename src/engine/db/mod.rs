@@ -190,9 +190,9 @@ pub(crate) mod test {
         let db_session = common_session_db().await?.into_inner();
         let db = db_session.clone();
         {
-            let mut new_db = db.db().write().await;
+            let mut new_db = db.db.write().await;
 
-            assert!(new_db.reconnect_jwt("discket_test", "").await.is_ok());
+            assert!(new_db.reconnect_jwt("discuits_test", "").await.is_ok());
 
             assert!(new_db.validate_server().await.is_ok());
             assert!(new_db.validate_connection().await.is_ok());

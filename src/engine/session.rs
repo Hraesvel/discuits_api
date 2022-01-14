@@ -55,11 +55,11 @@ pub(crate) mod test {
 
     pub async fn common_session_db() -> Result<Session<Db<ArangoDb>>, EngineError> {
         let auth = AuthType::Basic {
-            user: "discket_test",
+            user: "discuits_test",
             pass: "",
         };
         let db = ArangoDb::builder()
-            .db_name("discket_test")
+            .db_name("discuits_test")
             .auth_type(auth)
             .connect()
             .await?;
