@@ -12,11 +12,11 @@ mod test {
     async fn read_multiple_types() -> SimpleResult {
         let s = with_arangodb().await?;
 
-        let reader = s.get_ref().db().read().await;
+        let db = s.get_ref().db().read().await;
 
-        let boop = reader.get_all::<Album>().await?;
-        let bop = reader.get_all::<Artist>().await?;
-        let art: Vec<Artist> = reader.get_all().await?;
+        let boop = db.get_all::<Album>().await?;
+        let bop = db.get_all::<Artist>().await?;
+        let art: Vec<Artist> = db.get_all().await?;
 
         dbg!(boop);
         dbg!(bop);
