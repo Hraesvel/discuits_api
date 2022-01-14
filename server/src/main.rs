@@ -2,11 +2,9 @@ use actix_web::web::{self, get, Data};
 use actix_web::{App, HttpResponse, HttpServer};
 
 // Todo: preludes module for discuits_api
-use discuits_api::engine::db::{ArangoDb, AuthType, Db, DbBasics, DbBuilder};
-use discuits_api::engine::session::Session;
-use discuits_api::engine::{DbError, EngineError};
-use discuits_api::io::read::EngineGet;
-use discuits_api::models::album::Album;
+use discuits_api::preludes::*;
+use discuits_api::preludes::read::EngineGet;
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -17,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     let session = shared_data.clone();
     HttpServer::new(move || {
         App::new()
-            .data(session.clone())
+            .app_data(session.clone())
             .service(web::scope("/app").route("", get().to(get_all_albums)))
     })
     .bind("127.0.0.1:8181")?
@@ -37,7 +35,7 @@ async fn config_database() -> Result<Session<Db<ArangoDb>>, EngineError> {
     Ok(Session::new(db))
 }
 
-async fn get_all_albums(data: Data<Session<Db<ArangoDb>>>) -> actix_web::Result<HttpResponse> {
+async fn get_all_albums(data: Session<Db<ArangoDb>>) -> actix_web::Result<HttpResponse> {
     let db = data.db().read().await;
     let a = db.get_all::<Album>().await.map_err(|err| {
         if let Some(db_error) = err.downcast_ref::<DbError>() {

@@ -6,7 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-discuits_api = { path = ".." }
+discuits_api = { path = "..", features = ["actix"] }
 actix-web = "4.0.0-beta.19"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
