@@ -174,22 +174,22 @@ pub fn basic_arangodb_write(input: proc_macro::TokenStream) -> proc_macro::Token
     let expand = quote! {
             use async_trait::async_trait;
             use crate::io::write::{Write};
-            use crate::io::delete::Delete;
+            // use crate::io::delete::Delete;
             use crate::engine::EngineError;
 
-            #[async_trait]
-            impl Delete<#name> for crate::engine::db::ArangoDb {
-            type E = crate::engine::EngineError;
-
-            async fn remove(&self, id: &str) -> Result<#name, Self::E>
-            {
-                let parse = id.split('/').collect::<Vec<&str>>();
-                let aql = crate::engine::db::arangodb::ArangoDb::remove(parse[1], parse[0]);
-                let mut value: Vec<#name> = self.db.aql_query(aql).await?;
-                if value.is_empty() { return crate::engine::DbError::ItemNotFound.into() }
-                Ok(value.swap_remove(0))
-             }
-        }
+        //     #[async_trait]
+        //     impl Delete<#name> for crate::engine::db::ArangoDb {
+        //     type E = crate::engine::EngineError;
+        //
+        //     async fn remove(&self, id: &str) -> Result<#name, Self::E>
+        //     {
+        //         let parse = id.split('/').collect::<Vec<&str>>();
+        //         let aql = crate::engine::db::arangodb::ArangoDb::remove(parse[1], parse[0]);
+        //         let mut value: Vec<#name> = self.db.aql_query(aql).await?;
+        //         if value.is_empty() { return crate::engine::DbError::ItemNotFound.into() }
+        //         Ok(value.swap_remove(0))
+        //      }
+        // }
 
 
 
